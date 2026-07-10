@@ -12,8 +12,159 @@ datasource db {
   provider = "postgresql"
 }
 
-enum Roles {
-  ADMIN
+// ==========================================
+// 1. ENTIDAD SAAS (AISLAMIENTO DE INQUILINOS)
+// ==========================================
+model Empresa {
+  id                  String                @id @default(uuid())
+  nombre              String                // Ej: "Logística del Sur S.A." o "TransBuses S.A."
+  tipoIndustria       String?               // Ej: "Combustible", "Pasajeros", "Carga"
+  usuarios            Usuario[]
+  vehiculos           Vehiculo[]
+  viajes              Viaje[]
+  createdAt           DateTime              @default(now())
+}
+
+enum RolUsuario {
   GERENTE
-  CONDUCTOR
+  CHOFER
+}
+
+// ==========================================
+// 2. USUARIOS Y CONTROL DE ACCESO
+// ==========================================
+model Usuario {
+  id                  String                @id @default(uuid())
+  authId              String                @unique // ID devuelto por Supabase Auth
+  empresaId           String
+  empresa             Empresa               @relation(fields: [empresaId], references: [id])
+  nombre              String
+  correo              String                @unique
+  rol                 RolUsuario            @default(CHOFER)
+  estadoActivo        Boolean               @default(true)
+  
+  viajes              Viaje[]
+  registrosCombustible RegistroCombustible[]
+  gastos               GastoExtra[]
+}
+
+// ==========================================
+// 3. FLOTA (ABSTRACCIÓN DE VEHÍCULOS)
+// ==========================================
+model Vehiculo {
+  id                  String                @id @default(uuid())
+  empresaId           String
+  empresa             Empresa               @relation(fields: [empresaId], references: [id])
+  placa               String                @unique // Ej: GBN8210, GTI1548
+  tipo                String                // Ej: "Tanquero", "Bus de pasajeros", "Mula"
+  marca               String?
+  estadoOperativo     Boolean               @default(true)
+  
+  documentos          DocumentoVehiculo[]
+  viajes              Viaje[]
+  registrosCombustible RegistroCombustible[]
+  gastos               GastoExtra[]
+  mantenimientos      Mantenimiento[]
+}
+
+// ==========================================
+// 4. CONTROL DOCUMENTAL (ALERTAS DE CADUCIDAD)
+// ==========================================
+model DocumentoVehiculo {
+  id                  String                @id @default(uuid())
+  vehiculoId          String
+  vehiculo            Vehiculo              @relation(fields: [vehiculoId], references: [id])
+  tipoDocumento       String                // Ej: "Póliza de Seguro", "Matrícula", "Permiso Bomberos"
+  fechaEmision        DateTime?
+  fechaExpiracion     DateTime?
+  costo               Float?
+  archivoUrl          String?               // URL de Supabase Storage
+  createdAt           DateTime              @default(now())
+}
+
+// ==========================================
+// 5. OPERACIÓN / LOGÍSTICA (NÚCLEO DEL SAAS)
+// ==========================================
+model Viaje {
+  id                  String                @id @default(uuid())
+  empresaId           String
+  empresa             Empresa               @relation(fields: [empresaId], references: [id])
+  vehiculoId          String
+  vehiculo            Vehiculo              @relation(fields: [vehiculoId], references: [id])
+  choferId            String
+  chofer              Usuario               @relation(fields: [choferId], references: [id])
+  
+  origen              String
+  destino             String
+  fechaSalida         DateTime              @default(now())
+  fechaLlegada        DateTime?
+  estado              String                @default("EN_RUTA") // EN_RUTA, FINALIZADO, RETRASADO
+  
+  // Abstracción de Mercancía o Carga
+  tipoCarga           String?               // Ej: "Diesel (Mercancía)", "Pasajeros", "Cacao"
+  cantidadCarga       Float?                // Ej: 10000, 42, 25
+  unidadMedida        String?               // Ej: "Galones", "Personas", "Toneladas"
+  
+  // Relaciones inversas
+  registrosCombustible RegistroCombustible[]
+  gastos               GastoExtra[]
+}
+
+// ==========================================
+// 6. CONSUMO DE COMBUSTIBLE DEL MOTOR
+// ==========================================
+model RegistroCombustible {
+  id                  String                @id @default(uuid())
+  vehiculoId          String
+  vehiculo            Vehiculo              @relation(fields: [vehiculoId], references: [id])
+  choferId            String
+  chofer              Usuario               @relation(fields: [choferId], references: [id])
+  viajeId             String?               // RELACIÓN AGREGADA: Opcional para máxima flexibilidad SaaS
+  viaje               Viaje?                @relation(fields: [viajeId], references: [id])
+  
+  fecha               DateTime              @default(now())
+  estacion            String?               // Ej: "BASTION", "AYACUCHO" (mapeado de tus Excels)
+  tipoCombustible     String                // Ej: "ECO", "SUPER", "DIESEL"
+  galones             Float
+  costoTotal          Float
+  distancia           Float                 // Kilometraje actual del odómetro
+  rendimientoCalculado Float?               // km/galón (Calculado por NestJS antes de guardar)
+  estado              String                @default("OK") // OK, ANOMALIA
+  facturaUrl          String?               // URL de la foto en Supabase Storage
+}
+
+// ==========================================
+// 7. GASTOS EN RUTA (PEAJES, VIÁTICOS, ETC.)
+// ==========================================
+model GastoExtra {
+  id                  String                @id @default(uuid())
+  vehiculoId          String
+  vehiculo            Vehiculo              @relation(fields: [vehiculoId], references: [id])
+  choferId            String
+  chofer              Usuario               @relation(fields: [choferId], references: [id])
+  viajeId             String?               // Vinculado al viaje donde ocurrió el gasto
+  viaje               Viaje?                @relation(fields: [viajeId], references: [id])
+  
+  fecha               DateTime              @default(now())
+  categoria           String                // Ej: "Peaje", "Alimentación" (como las fotos enviadas)
+  monto               Float
+  descripcion         String?
+  comprobanteUrl      String?               // URL de la foto en Supabase Storage
+}
+
+// ==========================================
+// 8. MANTENIMIENTO E HISTORIAL DE TALLER
+// ==========================================
+model Mantenimiento {
+  id                  String                @id @default(uuid())
+  vehiculoId          String
+  vehiculo            Vehiculo              @relation(fields: [vehiculoId], references: [id])
+  
+  fecha               DateTime              @default(now())
+  tipo                String                // Ej: "Preventivo", "Correctivo"
+  descripcion         String                // Ej: "Cambio de aceite y filtros de aire"
+  taller              String?
+  costo               Float
+  kilometraje         Float                 // Odómetro del carro al entrar al taller (Crucial para analíticas)
+  facturaUrl          String?               // URL de la factura del taller
 }
