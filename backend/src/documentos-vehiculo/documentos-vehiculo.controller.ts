@@ -8,31 +8,31 @@ import {
   Delete,
   UseGuards,
 } from '@nestjs/common';
-import { MantenimientosService } from './mantenimientos.service';
-import { CreateMantenimientoDto } from './dto/create-mantenimiento.dto';
-import { UpdateMantenimientoDto } from './dto/update-mantenimiento.dto';
+import { DocumentosVehiculoService } from './documentos-vehiculo.service';
+import { CreateDocumentoVehiculoDto } from './dto/create-documento-vehiculo.dto';
+import { UpdateDocumentoVehiculoDto } from './dto/update-documento-vehiculo.dto';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { CurrentUser } from '../auth/current-user.decorator';
 import { Usuario } from '../generated/prisma/client';
 
 @UseGuards(JwtAuthGuard)
-@Controller('mantenimientos')
-export class MantenimientosController {
+@Controller('documentos-vehiculo')
+export class DocumentosVehiculoController {
   constructor(
-    private readonly mantenimientosService: MantenimientosService,
+    private readonly documentosVehiculoService: DocumentosVehiculoService,
   ) {}
 
   @Post()
   create(
-    @Body() createMantenimientoDto: CreateMantenimientoDto,
+    @Body() createDto: CreateDocumentoVehiculoDto,
     @CurrentUser() currentUser: Usuario & { empresa: any },
   ) {
-    return this.mantenimientosService.create(createMantenimientoDto, currentUser);
+    return this.documentosVehiculoService.create(createDto, currentUser);
   }
 
   @Get()
   findAll(@CurrentUser() currentUser: Usuario & { empresa: any }) {
-    return this.mantenimientosService.findAll(currentUser);
+    return this.documentosVehiculoService.findAll(currentUser);
   }
 
   @Get(':id')
@@ -40,20 +40,16 @@ export class MantenimientosController {
     @Param('id') id: string,
     @CurrentUser() currentUser: Usuario & { empresa: any },
   ) {
-    return this.mantenimientosService.findOne(id, currentUser);
+    return this.documentosVehiculoService.findOne(id, currentUser);
   }
 
   @Patch(':id')
   update(
     @Param('id') id: string,
-    @Body() updateMantenimientoDto: UpdateMantenimientoDto,
+    @Body() updateDto: UpdateDocumentoVehiculoDto,
     @CurrentUser() currentUser: Usuario & { empresa: any },
   ) {
-    return this.mantenimientosService.update(
-      id,
-      updateMantenimientoDto,
-      currentUser,
-    );
+    return this.documentosVehiculoService.update(id, updateDto, currentUser);
   }
 
   @Delete(':id')
@@ -61,6 +57,6 @@ export class MantenimientosController {
     @Param('id') id: string,
     @CurrentUser() currentUser: Usuario & { empresa: any },
   ) {
-    return this.mantenimientosService.remove(id, currentUser);
+    return this.documentosVehiculoService.remove(id, currentUser);
   }
 }

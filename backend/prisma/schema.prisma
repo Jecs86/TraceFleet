@@ -27,6 +27,7 @@ model Empresa {
 }
 
 enum RolUsuario {
+  ADMIN
   GERENTE
   CHOFER
 }
@@ -37,8 +38,8 @@ enum RolUsuario {
 model Usuario {
   id                  String                @id @default(uuid())
   authId              String                @unique // ID devuelto por Supabase Auth
-  empresaId           String
-  empresa             Empresa               @relation(fields: [empresaId], references: [id])
+  empresaId           String?               // NULL solo para ADMIN (usuario de la plataforma SaaS)
+  empresa             Empresa?              @relation(fields: [empresaId], references: [id])
   nombre              String
   correo              String                @unique
   rol                 RolUsuario            @default(CHOFER)

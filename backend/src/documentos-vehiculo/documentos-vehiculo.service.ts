@@ -5,16 +5,16 @@ import {
 } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { RolUsuario, Usuario } from '../generated/prisma/client';
-import { CreateMantenimientoDto } from './dto/create-mantenimiento.dto';
-import { UpdateMantenimientoDto } from './dto/update-mantenimiento.dto';
+import { CreateDocumentoVehiculoDto } from './dto/create-documento-vehiculo.dto';
+import { UpdateDocumentoVehiculoDto } from './dto/update-documento-vehiculo.dto';
 
 type AuthUser = Usuario & { empresa: any };
 
 @Injectable()
-export class MantenimientosService {
+export class DocumentosVehiculoService {
   constructor(private readonly prisma: PrismaService) {}
 
-  async create(createDto: CreateMantenimientoDto, currentUser: AuthUser) {
+  async create(createDto: CreateDocumentoVehiculoDto, currentUser: AuthUser) {
     const vehiculo = await this.prisma.vehiculo.findUnique({
       where: { id: createDto.vehiculoId },
     });
@@ -29,48 +29,53 @@ export class MantenimientosService {
       );
     }
 
-    return this.prisma.mantenimiento.create({
+    return this.prisma.documentoVehiculo.create({
       data: {
         ...createDto,
-        fecha: createDto.fecha ? new Date(createDto.fecha) : undefined,
+        fechaEmision: createDto.fechaEmision
+          ? new Date(createDto.fechaEmision)
+          : undefined,
+        fechaExpiracion: createDto.fechaExpiracion
+          ? new Date(createDto.fechaExpiracion)
+          : undefined,
       },
     });
   }
 
-  /** ADMIN ve todos los mantenimientos; los demás solo los de su empresa. */
+  /** ADMIN ve todos los documentos; los demás solo los de su empresa. */
   findAll(currentUser: AuthUser) {
     if (currentUser.rol === RolUsuario.ADMIN) {
-      return this.prisma.mantenimiento.findMany({
+      return this.prisma.documentoVehiculo.findMany({
         include: { vehiculo: true },
       });
     }
-    return this.prisma.mantenimiento.findMany({
+    return this.prisma.documentoVehiculo.findMany({
       where: { vehiculo: { empresaId: currentUser.empresaId! } },
       include: { vehiculo: true },
     });
   }
 
   async findOne(id: string, currentUser: AuthUser) {
-    const mantenimiento = await this.prisma.mantenimiento.findUnique({
+    const documento = await this.prisma.documentoVehiculo.findUnique({
       where: { id },
       include: { vehiculo: true },
     });
 
-    if (!mantenimiento) {
-      throw new NotFoundException(`Mantenimiento #${id} no encontrado`);
+    if (!documento) {
+      throw new NotFoundException(`DocumentoVehiculo #${id} no encontrado`);
     }
 
     if (
       currentUser.rol !== RolUsuario.ADMIN &&
-      mantenimiento.vehiculo.empresaId !== currentUser.empresaId
+      documento.vehiculo.empresaId !== currentUser.empresaId
     ) {
-      throw new ForbiddenException('No tienes acceso a este mantenimiento');
+      throw new ForbiddenException('No tienes acceso a este documento');
     }
 
-    return mantenimiento;
+    return documento;
   }
 
-  async update(id: string, updateDto: UpdateMantenimientoDto, currentUser: AuthUser) {
+  async update(id: string, updateDto: UpdateDocumentoVehiculoDto, currentUser: AuthUser) {
     await this.findOne(id, currentUser);
 
     if (updateDto.vehiculoId) {
@@ -88,17 +93,22 @@ export class MantenimientosService {
       }
     }
 
-    return this.prisma.mantenimiento.update({
+    return this.prisma.documentoVehiculo.update({
       where: { id },
       data: {
         ...updateDto,
-        fecha: updateDto.fecha ? new Date(updateDto.fecha) : undefined,
+        fechaEmision: updateDto.fechaEmision
+          ? new Date(updateDto.fechaEmision)
+          : undefined,
+        fechaExpiracion: updateDto.fechaExpiracion
+          ? new Date(updateDto.fechaExpiracion)
+          : undefined,
       },
     });
   }
 
   async remove(id: string, currentUser: AuthUser) {
     await this.findOne(id, currentUser);
-    return this.prisma.mantenimiento.delete({ where: { id } });
+    return this.prisma.documentoVehiculo.delete({ where: { id } });
   }
 }
