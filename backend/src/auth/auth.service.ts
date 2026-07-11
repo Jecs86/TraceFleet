@@ -1,26 +1,60 @@
-import { Injectable } from '@nestjs/common';
-import { CreateAuthDto } from './dto/create-auth.dto';
-import { UpdateAuthDto } from './dto/update-auth.dto';
+import { Injectable, BadRequestException } from '@nestjs/common';
+import { PrismaService } from '../prisma/prisma.service';
+import { RolUsuario } from '../generated/prisma/client';
 
 @Injectable()
 export class AuthService {
-  create(createAuthDto: CreateAuthDto) {
-    return 'This action adds a new auth';
-  }
+  constructor(private readonly prisma: PrismaService) {}
 
-  findAll() {
-    return `This action returns all auth`;
-  }
+  async setupTestUser(authId: string, correo: string, nombre: string, rol?: RolUsuario) {
+    if (!authId || !correo || !nombre) {
+      throw new BadRequestException('authId, correo y nombre son campos obligatorios');
+    }
 
-  findOne(id: number) {
-    return `This action returns a #${id} auth`;
-  }
+    // 1. Asegurar la existencia de al menos una empresa
+    let empresa = await this.prisma.empresa.findFirst();
+    if (!empresa) {
+      empresa = await this.prisma.empresa.create({
+        data: {
+          nombre: 'Empresa Demo TraceFleet',
+          tipoIndustria: 'Logística',
+        },
+      });
+    }
 
-  update(id: number, updateAuthDto: UpdateAuthDto) {
-    return `This action updates a #${id} auth`;
-  }
+    // 2. Verificar si el usuario ya existe
+    const usuarioExistente = await this.prisma.usuario.findFirst({
+      where: {
+        OR: [
+          { authId },
+          { correo },
+        ],
+      },
+    });
 
-  remove(id: number) {
-    return `This action removes a #${id} auth`;
+    if (usuarioExistente) {
+      // Si existe, actualizamos su authId y correo en caso de que hayan cambiado
+      return this.prisma.usuario.update({
+        where: { id: usuarioExistente.id },
+        data: {
+          authId,
+          correo,
+          nombre,
+          rol: rol || usuarioExistente.rol,
+        },
+      });
+    }
+
+    // 3. Crear el nuevo usuario
+    return this.prisma.usuario.create({
+      data: {
+        authId,
+        correo,
+        nombre,
+        rol: rol || 'GERENTE',
+        empresaId: empresa.id,
+      },
+    });
   }
 }
+
