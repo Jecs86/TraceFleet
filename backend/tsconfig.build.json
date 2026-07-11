@@ -9,6 +9,5 @@
     "test",
     "dist",
     "**/*spec.ts",
-    "prisma.config.ts",
-    "src/generated/**/*"]
+    "prisma.config.ts"]
 }

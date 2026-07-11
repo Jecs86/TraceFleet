@@ -1,26 +1,148 @@
-import { Injectable } from '@nestjs/common';
+import {
+  ForbiddenException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
+import { PrismaService } from '../prisma/prisma.service';
+import { RolUsuario, Usuario } from '../generated/prisma/client';
 import { CreateCombustibleDto } from './dto/create-combustible.dto';
 import { UpdateCombustibleDto } from './dto/update-combustible.dto';
 
+type AuthUser = Usuario & { empresa: any };
+
 @Injectable()
 export class CombustibleService {
-  create(createCombustibleDto: CreateCombustibleDto) {
-    return 'This action adds a new combustible';
+  constructor(private readonly prisma: PrismaService) {}
+
+  async create(createDto: CreateCombustibleDto, currentUser: AuthUser) {
+    const empresaId = currentUser.empresaId!;
+    const isAdmin = currentUser.rol === RolUsuario.ADMIN;
+
+    const vehiculo = await this.prisma.vehiculo.findUnique({
+      where: { id: createDto.vehiculoId },
+    });
+    if (!vehiculo || (!isAdmin && vehiculo.empresaId !== empresaId)) {
+      throw new ForbiddenException(
+        'El vehículo no existe o no pertenece a tu empresa',
+      );
+    }
+
+    const chofer = await this.prisma.usuario.findUnique({
+      where: { id: createDto.choferId },
+    });
+    if (!chofer || (!isAdmin && chofer.empresaId !== empresaId)) {
+      throw new ForbiddenException(
+        'El chofer no existe o no pertenece a tu empresa',
+      );
+    }
+
+    if (createDto.viajeId) {
+      const viaje = await this.prisma.viaje.findUnique({
+        where: { id: createDto.viajeId },
+      });
+      if (!viaje || (!isAdmin && viaje.empresaId !== empresaId)) {
+        throw new ForbiddenException(
+          'El viaje no existe o no pertenece a tu empresa',
+        );
+      }
+    }
+
+    // Auto-calculate rendimientoCalculado
+    let rendimientoCalculado: number | null = null;
+    const ultimoRegistro = await this.prisma.registroCombustible.findFirst({
+      where: { vehiculoId: createDto.vehiculoId },
+      orderBy: { distancia: 'desc' },
+    });
+
+    if (
+      ultimoRegistro &&
+      createDto.distancia > ultimoRegistro.distancia &&
+      createDto.galones > 0
+    ) {
+      rendimientoCalculado =
+        (createDto.distancia - ultimoRegistro.distancia) / createDto.galones;
+    }
+
+    return this.prisma.registroCombustible.create({
+      data: {
+        ...createDto,
+        rendimientoCalculado,
+        fecha: createDto.fecha ? new Date(createDto.fecha) : undefined,
+      },
+    });
   }
 
-  findAll() {
-    return `This action returns all combustible`;
+  /** ADMIN ve todos los registros; los demás solo los de su empresa. */
+  findAll(currentUser: AuthUser) {
+    if (currentUser.rol === RolUsuario.ADMIN) {
+      return this.prisma.registroCombustible.findMany({
+        include: { vehiculo: true, chofer: true, viaje: true },
+      });
+    }
+    return this.prisma.registroCombustible.findMany({
+      where: { vehiculo: { empresaId: currentUser.empresaId! } },
+      include: { vehiculo: true, chofer: true, viaje: true },
+    });
   }
 
-  findOne(id: number) {
-    return `This action returns a #${id} combustible`;
+  async findOne(id: string, currentUser: AuthUser) {
+    const registro = await this.prisma.registroCombustible.findUnique({
+      where: { id },
+      include: { vehiculo: true, chofer: true, viaje: true },
+    });
+
+    if (!registro) {
+      throw new NotFoundException(`RegistroCombustible #${id} no encontrado`);
+    }
+
+    if (
+      currentUser.rol !== RolUsuario.ADMIN &&
+      registro.vehiculo.empresaId !== currentUser.empresaId
+    ) {
+      throw new ForbiddenException('No tienes acceso a este registro');
+    }
+
+    return registro;
   }
 
-  update(id: number, updateCombustibleDto: UpdateCombustibleDto) {
-    return `This action updates a #${id} combustible`;
+  async update(id: string, updateDto: UpdateCombustibleDto, currentUser: AuthUser) {
+    await this.findOne(id, currentUser);
+    const isAdmin = currentUser.rol === RolUsuario.ADMIN;
+    const empresaId = currentUser.empresaId!;
+
+    if (updateDto.vehiculoId) {
+      const vehiculo = await this.prisma.vehiculo.findUnique({
+        where: { id: updateDto.vehiculoId },
+      });
+      if (!vehiculo || (!isAdmin && vehiculo.empresaId !== empresaId)) {
+        throw new ForbiddenException(
+          'El vehículo no existe o no pertenece a tu empresa',
+        );
+      }
+    }
+
+    if (updateDto.choferId) {
+      const chofer = await this.prisma.usuario.findUnique({
+        where: { id: updateDto.choferId },
+      });
+      if (!chofer || (!isAdmin && chofer.empresaId !== empresaId)) {
+        throw new ForbiddenException(
+          'El chofer no existe o no pertenece a tu empresa',
+        );
+      }
+    }
+
+    return this.prisma.registroCombustible.update({
+      where: { id },
+      data: {
+        ...updateDto,
+        fecha: updateDto.fecha ? new Date(updateDto.fecha) : undefined,
+      },
+    });
   }
 
-  remove(id: number) {
-    return `This action removes a #${id} combustible`;
+  async remove(id: string, currentUser: AuthUser) {
+    await this.findOne(id, currentUser);
+    return this.prisma.registroCombustible.delete({ where: { id } });
   }
 }
