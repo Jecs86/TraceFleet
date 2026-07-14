@@ -4,7 +4,7 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
-import { RolUsuario, Usuario } from '../generated/prisma/client';
+import { RolUsuario, TipoCombustible, Usuario } from '../generated/prisma/client';
 import { CreateCombustibleDto } from './dto/create-combustible.dto';
 import { UpdateCombustibleDto } from './dto/update-combustible.dto';
 
@@ -47,7 +47,7 @@ export class CombustibleService {
       }
     }
 
-    // Auto-calculate rendimientoCalculado
+    // 1. Calcular rendimiento: km recorridos desde el último tanqueo / galones cargados
     let rendimientoCalculado: number | null = null;
     const ultimoRegistro = await this.prisma.registroCombustible.findFirst({
       where: { vehiculoId: createDto.vehiculoId },
@@ -63,10 +63,44 @@ export class CombustibleService {
         (createDto.distancia - ultimoRegistro.distancia) / createDto.galones;
     }
 
+    // 2. Precio real pagado por galón
+    const precioPorGalon = createDto.galones > 0
+      ? createDto.costoTotal / createDto.galones
+      : null;
+
+    // 3. Comparar contra el precio oficial vigente para detectar anomalía de precio
+    //    Si no hay precio oficial cargado, se omite la verificación de precio.
+    const precioOficial = await this.prisma.precioCombustible.findUnique({
+      where: { tipo: createDto.tipoCombustible as TipoCombustible },
+    });
+
+    // 4. Lógica de anomalía combinada:
+    //    - Rendimiento bajo el mínimo esperado (< 8 km/galón), O
+    //    - Precio pagado supera en más de un 10% el precio oficial vigente
+    const RENDIMIENTO_MINIMO_ESPERADO = 8; // km/galón — umbral base MVP
+    const TOLERANCIA_PRECIO = 0.10;        // 10% de margen sobre el precio oficial
+
+    let esAnomalia = false;
+    if (rendimientoCalculado !== null && rendimientoCalculado < RENDIMIENTO_MINIMO_ESPERADO) {
+      esAnomalia = true;
+    }
+    if (precioOficial && precioPorGalon !== null) {
+      const limiteAceptable = precioOficial.precioPorGalon * (1 + TOLERANCIA_PRECIO);
+      if (precioPorGalon > limiteAceptable) {
+        esAnomalia = true;
+      }
+    }
+
+    const estado = esAnomalia ? 'ANOMALIA' : (createDto.estado ?? 'OK');
+
+    // 5. Guardar con los campos calculados
     return this.prisma.registroCombustible.create({
       data: {
         ...createDto,
+        tipoCombustible: createDto.tipoCombustible as TipoCombustible,
         rendimientoCalculado,
+        precioPorGalon,
+        estado,
         fecha: createDto.fecha ? new Date(createDto.fecha) : undefined,
       },
     });
