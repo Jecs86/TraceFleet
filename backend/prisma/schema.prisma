@@ -32,6 +32,12 @@ enum RolUsuario {
   CHOFER
 }
 
+enum TipoCombustible {
+  ECO
+  SUPER
+  DIESEL
+}
+
 // ==========================================
 // 2. USUARIOS Y CONTROL DE ACCESO
 // ==========================================
@@ -61,6 +67,7 @@ model Vehiculo {
   tipo                String                // Ej: "Tanquero", "Bus de pasajeros", "Mula"
   marca               String?
   estadoOperativo     Boolean               @default(true)
+  imagenUrl           String?               // URL pública de la foto del vehículo en Supabase Storage
   
   documentos          DocumentoVehiculo[]
   viajes              Viaje[]
@@ -107,9 +114,13 @@ model Viaje {
   cantidadCarga       Float?                // Ej: 10000, 42, 25
   unidadMedida        String?               // Ej: "Galones", "Personas", "Toneladas"
   
+  ingresoServicio     Float                 @default(0)
+
   // Relaciones inversas
   registrosCombustible RegistroCombustible[]
   gastos               GastoExtra[]
+
+  liquidacion          LiquidacionViaje?
 }
 
 // ==========================================
@@ -126,11 +137,12 @@ model RegistroCombustible {
   
   fecha               DateTime              @default(now())
   estacion            String?               // Ej: "BASTION", "AYACUCHO" (mapeado de tus Excels)
-  tipoCombustible     String                // Ej: "ECO", "SUPER", "DIESEL"
+  tipoCombustible     TipoCombustible       // ECO, SUPER, DIESEL
   galones             Float
   costoTotal          Float
-  distancia           Float                 // Kilometraje actual del odómetro
+  distancia           Float                 // Kilometraje actual del odómetro al momento del tanqueo
   rendimientoCalculado Float?               // km/galón (Calculado por NestJS antes de guardar)
+  precioPorGalon      Float?               // Precio real pagado por galón (costoTotal / galones), para auditoría
   estado              String                @default("OK") // OK, ANOMALIA
   facturaUrl          String?               // URL de la foto en Supabase Storage
 }
@@ -169,4 +181,39 @@ model Mantenimiento {
   costo               Float
   kilometraje         Float                 // Odómetro del carro al entrar al taller (Crucial para analíticas)
   facturaUrl          String?               // URL de la factura del taller
+}
+
+// ==========================================
+// 9. PRECIOS DE COMBUSTIBLE (REGULADOS EN ECUADOR)
+// ==========================================
+// El ADMIN o GERENTE actualiza estos valores cuando el gobierno cambia el precio oficial.
+// El sistema usa el precio vigente al momento de registrar cada tanqueo para auditar discrepancias.
+model PrecioCombustible {
+  id              String           @id @default(uuid())
+  tipo            TipoCombustible  @unique // Un registro por tipo; se sobreescribe al actualizar
+  precioPorGalon  Float            // USD — precio oficial vigente (Ej: ECO=2.40, SUPER=2.75, DIESEL=1.90)
+  actualizadoEn   DateTime         @default(now()) @updatedAt
+}
+
+// ==========================================
+// 10. AUDITORÍA FINANCIERA Y CONTROL DE PÉRDIDAS
+// ==========================================
+model LiquidacionViaje {
+  id                       String   @id @default(uuid())
+  viajeId                  String   @unique // Garantiza la relación 1:1 con el viaje
+  viaje                    Viaje    @relation(fields: [viajeId], references: [id], onDelete: Cascade)
+  
+  // Totales calculados en ruta
+  totalCombustibleReal     Float    // Suma de los costos de RegistroCombustible de este viaje
+  totalGastosExtra         Float    // Suma de peajes, viáticos, etc.
+  
+  // Métricas de Auditoría e Inteligencia del SaaS (Diferencias y Fraudes)
+  discrepanciaPrecioCombustible Float @default(0) // Alerta si pagó el galón más caro que el promedio/oficial
+  discrepanciaGalones          Float @default(0) // Alerta si el rendimiento real fue menor al esperado del vehículo
+  
+  // Utilidad e Impacto del Mantenimiento
+  ahorroMantenimientoEstimado  Float @default(0) // Cuánto dinero ahorró la empresa por tener el motor afinado (Kpi de valor)
+  utilidadNetaViaje            Float // ingresoFlete - (totalCombustibleReal + totalGastosExtra)
+  
+  createdAt                DateTime @default(now())
 }

@@ -1,5 +1,6 @@
 import {
   IsDateString,
+  IsEnum,
   IsNotEmpty,
   IsNumber,
   IsOptional,
@@ -7,6 +8,7 @@ import {
   IsString,
   IsUUID,
 } from 'class-validator';
+import { TipoCombustible } from '../../generated/prisma/client';
 
 export class CreateCombustibleDto {
   @IsNotEmpty()
@@ -30,8 +32,10 @@ export class CreateCombustibleDto {
   estacion?: string;
 
   @IsNotEmpty()
-  @IsString()
-  tipoCombustible: string;
+  @IsEnum(TipoCombustible, {
+    message: `tipoCombustible debe ser uno de: ${Object.values(TipoCombustible).join(', ')}`,
+  })
+  tipoCombustible: TipoCombustible;
 
   @IsNotEmpty()
   @IsNumber()

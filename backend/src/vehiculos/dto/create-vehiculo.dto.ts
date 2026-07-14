@@ -1,4 +1,10 @@
-import { IsBoolean, IsNotEmpty, IsOptional, IsString } from 'class-validator';
+import {
+  IsBoolean,
+  IsNotEmpty,
+  IsOptional,
+  IsString,
+  IsUUID,
+} from 'class-validator';
 
 export class CreateVehiculoDto {
   @IsNotEmpty()
@@ -16,4 +22,12 @@ export class CreateVehiculoDto {
   @IsOptional()
   @IsBoolean()
   estadoOperativo?: boolean;
+
+  /**
+   * Solo requerido cuando el usuario autenticado es ADMIN.
+   * GERENTE y CHOFER siempre crean vehículos en su propia empresa.
+   */
+  @IsOptional()
+  @IsUUID()
+  empresaId?: string;
 }

@@ -33,6 +33,16 @@ export class ViajesController {
     return this.viajesService.findAll(currentUser);
   }
 
+  /**
+   * GET /viajes/liquidaciones
+   * Lista todas las liquidaciones finalizadas de la empresa.
+   * Ruta estática — debe ir ANTES de /:id para que NestJS no la interprete como parámetro.
+   */
+  @Get('liquidaciones')
+  findAllLiquidaciones(@CurrentUser() currentUser: Usuario & { empresa: any }) {
+    return this.viajesService.findAllLiquidaciones(currentUser);
+  }
+
   @Get(':id')
   findOne(
     @Param('id') id: string,
@@ -56,5 +66,30 @@ export class ViajesController {
     @CurrentUser() currentUser: Usuario & { empresa: any },
   ) {
     return this.viajesService.remove(id, currentUser);
+  }
+
+  /**
+   * POST /viajes/:id/finalizar
+   * Cierra financieramente el viaje: marca estado=FINALIZADO y crea la LiquidacionViaje.
+   */
+  @Post(':id/finalizar')
+  finalizar(
+    @Param('id') id: string,
+    @CurrentUser() currentUser: Usuario & { empresa: any },
+  ) {
+    return this.viajesService.finalizarViaje(id, currentUser);
+  }
+
+  /**
+   * GET /viajes/:id/liquidacion
+   * Devuelve la liquidación de un viaje específico con el detalle completo:
+   * totales, discrepancias, KPIs, y todos los registros de combustible y gastos del viaje.
+   */
+  @Get(':id/liquidacion')
+  findLiquidacion(
+    @Param('id') id: string,
+    @CurrentUser() currentUser: Usuario & { empresa: any },
+  ) {
+    return this.viajesService.findLiquidacionByViaje(id, currentUser);
   }
 }
