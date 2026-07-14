@@ -29,6 +29,7 @@ import { RolesGuard } from './auth/roles.guard';
     CombustibleModule,
     GastosModule,
     MantenimientosModule,
+    PrecioCombustibleModule,
   ],
   controllers: [AppController],
   providers: [
