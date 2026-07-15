@@ -155,7 +155,7 @@ export class ViajesService {
         ? {}
         : { viaje: { empresaId: currentUser.empresaId! } };
 
-    return this.prisma.liquidacionViaje.findMany({
+    const liquidaciones = await this.prisma.liquidacionViaje.findMany({
       where,
       include: {
         viaje: {
@@ -168,10 +168,39 @@ export class ViajesService {
             ingresoServicio: true,
             chofer: { select: { id: true, nombre: true } },
             vehiculo: { select: { id: true, placa: true, tipo: true } },
+            registrosCombustible: {
+              select: { distancia: true, galones: true },
+              orderBy: { distancia: 'asc' },
+            },
           },
         },
       },
       orderBy: { createdAt: 'desc' },
+    });
+
+    // Enriquecer cada liquidación con distanciaTotal y rendimientoKmGalon
+    // calculados a partir de los registros de combustible del viaje.
+    return liquidaciones.map((liq) => {
+      const registros = liq.viaje.registrosCombustible;
+      const distanciaTotal =
+        registros.length >= 2
+          ? registros[registros.length - 1].distancia - registros[0].distancia
+          : 0;
+      const totalGalones = registros.reduce((s, r) => s + r.galones, 0);
+      const rendimientoKmGalon =
+        distanciaTotal > 0 && totalGalones > 0
+          ? distanciaTotal / totalGalones
+          : null;
+
+      // Excluir registrosCombustible del resultado final (dato interno de cálculo)
+      const { registrosCombustible: _rc, ...viajeClean } = liq.viaje;
+
+      return {
+        ...liq,
+        viaje: viajeClean,
+        distanciaTotal,
+        rendimientoKmGalon,
+      };
     });
   }
 
