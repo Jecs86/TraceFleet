@@ -18,6 +18,9 @@
  *   - error  → muestra mensaje sin limpiar campos (Req 7.6)
  *
  * Validates: Requirements 7.1, 7.2, 7.3, 7.4, 7.5, 7.6, 7.7
+ *
+ * Bug 5 fix — fecha field replaced with native DateTimePicker
+ * Dependency: @react-native-community/datetimepicker@9.1.0
  */
 
 import React, { useCallback, useEffect, useState } from 'react';
@@ -32,6 +35,7 @@ import {
   TouchableOpacity,
   View,
 } from 'react-native';
+import DateTimePicker from '@react-native-community/datetimepicker';
 import { Snackbar } from 'react-native-paper';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import type { CreateGastoDto } from '../types/api';
@@ -40,6 +44,7 @@ import { ApiService } from '../services/ApiService';
 import { useAuth } from '../hooks/useAuth';
 import { useTheme } from '../hooks/useTheme';
 import { useActiveViaje } from '../hooks/useActiveViaje';
+import { toISODate, formatDateDisplay } from '../utils/dateHelpers';
 
 // ─── Props ────────────────────────────────────────────────────────────────────
 
@@ -135,6 +140,10 @@ export function GastoFormScreen({
   const [isSaving, setIsSaving] = useState(false);
   const [apiError, setApiError] = useState<string | null>(null);
   const [snackbarVisible, setSnackbarVisible] = useState(false);
+
+  // ─── DateTimePicker state (Bug 5 fix — Req 2.17, 2.18, 2.19) ────────────────
+  const [showDatePicker, setShowDatePicker] = useState(false);
+  const [pickerDate, setPickerDate] = useState(new Date());
 
   // ─── Load existing data in edit mode ────────────────────────────────────────
 
@@ -410,22 +419,48 @@ export function GastoFormScreen({
         <Text style={[styles.label, { color: theme.textPrimary }]}>
           Fecha *
         </Text>
-        <TextInput
-          style={[
-            styles.input,
-            {
-              backgroundColor: theme.surface,
-              borderColor: fieldErrors.fecha ? theme.error : theme.border,
-              color: theme.textPrimary,
-            },
-          ]}
-          value={fields.fecha}
-          onChangeText={(v) => setField('fecha', v)}
-          placeholder="YYYY-MM-DD"
-          placeholderTextColor={theme.textSecondary}
-          testID="input-fecha"
-          accessibilityLabel="Fecha del gasto en formato YYYY-MM-DD"
-        />
+        {/* Bug 5 fix — tappable field opens native DateTimePicker (Req 2.17, 2.18, 2.19) */}
+        <TouchableOpacity
+          onPress={() => setShowDatePicker(true)}
+          testID="fecha-field-touchable"
+          accessibilityLabel="Seleccionar fecha"
+          accessibilityRole="button"
+        >
+          <View
+            style={[
+              styles.input,
+              {
+                backgroundColor: theme.surface,
+                borderColor: fieldErrors.fecha ? theme.error : theme.border,
+                justifyContent: 'center',
+              },
+            ]}
+          >
+            <Text
+              style={{
+                color: fields.fecha ? theme.textPrimary : theme.textSecondary,
+                fontSize: 15,
+              }}
+            >
+              {fields.fecha ? formatDateDisplay(fields.fecha) : 'Seleccionar fecha'}
+            </Text>
+          </View>
+        </TouchableOpacity>
+        {showDatePicker && (
+          <DateTimePicker
+            value={pickerDate}
+            mode="date"
+            display={Platform.OS === 'ios' ? 'spinner' : 'default'}
+            onValueChange={(event, selectedDate) => {
+              setShowDatePicker(Platform.OS === 'ios');
+              if (selectedDate) {
+                setPickerDate(selectedDate);
+                setField('fecha', toISODate(selectedDate)); // stores YYYY-MM-DD
+              }
+            }}
+            onDismiss={() => setShowDatePicker(false)}
+          />
+        )}
         {fieldErrors.fecha !== undefined && (
           <Text
             style={[styles.errorText, { color: theme.error }]}

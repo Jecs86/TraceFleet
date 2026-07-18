@@ -64,6 +64,15 @@ async function getViajeById(id: string): Promise<Viaje> {
   return data;
 }
 
+/** Actualiza parcialmente un viaje (PATCH /viajes/:id). */
+async function updateViaje(
+  id: string,
+  payload: Partial<Omit<Viaje, 'id'>>,
+): Promise<Viaje> {
+  const { data } = await api.patch<Viaje>(`/viajes/${id}`, payload);
+  return data;
+}
+
 /** Finaliza un viaje activo (POST /viajes/:id/finalizar). */
 async function finalizarViaje(id: string): Promise<Viaje> {
   const { data } = await api.post<Viaje>(`/viajes/${id}/finalizar`);
@@ -127,6 +136,7 @@ export const ApiService = {
   // Viajes
   getViajes,
   getViajeById,
+  updateViaje,
   finalizarViaje,
   // Combustible
   getCombustible,

@@ -4,20 +4,21 @@
  * - Carga los viajes del chofer autenticado desde GET /viajes
  * - Filtra por choferId === user.id
  * - Ordena con sortViajesByEstado() (activos primero)
- * - Renderiza FlatList de ViajeCard con RefreshControl (pull-to-refresh)
+ * - Renderiza SectionList con sección "Viajes Activos" (fija) y "Finalizados" (colapsable)
  * - Estados: LoadingOverlay durante carga, ErrorBanner con "Reintentar" ante error,
  *   texto vacío si lista vacía
  * - Al presionar una tarjeta navega a ViajeDetail pasando viajeId
  *
- * Validates: Requirements 2.1, 2.2, 2.3, 2.4, 2.5, 2.6, 2.7, 2.8
+ * Validates: Requirements 2.1, 2.2, 2.3, 2.4, 2.5, 2.6, 2.7, 2.8, 2.14, 2.15, 2.16
  */
 
 import React, { useCallback, useEffect, useState } from 'react';
 import {
-  FlatList,
   RefreshControl,
+  SectionList,
   StyleSheet,
   Text,
+  TouchableOpacity,
   View,
 } from 'react-native';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
@@ -65,6 +66,8 @@ export function RutasScreen({ navigation }: Props): React.ReactElement {
   const [isLoading, setIsLoading] = useState(true);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  // Task 6.1 — "Finalizados" section collapsed by default (Req 2.15)
+  const [finalizadosExpanded, setFinalizadosExpanded] = useState(false);
 
   // ─── Fetch ──────────────────────────────────────────────────────────────────
 
@@ -113,16 +116,105 @@ export function RutasScreen({ navigation }: Props): React.ReactElement {
     void fetchViajes(false);
   };
 
+  // ─── Section data (Task 6.1) ────────────────────────────────────────────────
+
+  // Separate active trips (EN_RUTA, RETRASADO) from finalized ones (Req 2.14)
+  const activos = viajes.filter(
+    (v) => v.estado === 'EN_RUTA' || v.estado === 'RETRASADO',
+  );
+  const finalizados = viajes
+    .filter((v) => v.estado === 'FINALIZADO')
+    .sort((a, b) => b.fechaSalida.localeCompare(a.fechaSalida));
+
+  // Build sections: always show "Viajes Activos"; only show "Finalizados" when
+  // there is at least one finalized trip (Req 2.14, 2.15, 2.16).
+  // When viajes is completely empty we pass an empty sections array so that
+  // SectionList's ListEmptyComponent fires showing "No tienes viajes asignados" (Req 3.6).
+  const sections: { title: string; data: (Viaje | null)[] }[] =
+    viajes.length === 0
+      ? []
+      : [
+          { title: 'Viajes Activos', data: activos.length > 0 ? activos : [null] },
+          ...(finalizados.length > 0
+            ? [{ title: 'Finalizados', data: finalizadosExpanded ? finalizados : [] }]
+            : []),
+        ];
+
   // ─── Render helpers ─────────────────────────────────────────────────────────
 
-  const renderItem = ({ item }: { item: Viaje }): React.ReactElement => (
-    <ViajeCard
-      viaje={item}
-      onPress={() => handlePressViaje(item.id)}
-    />
-  );
+  // Task 6.2 — renderItem: null means "no active trips" placeholder (Req 2.16)
+  const renderItem = ({
+    item,
+  }: {
+    item: Viaje | null;
+  }): React.ReactElement => {
+    if (item === null) {
+      return (
+        <View style={styles.emptySection} testID="no-active-trips">
+          <Text style={[styles.emptySectionText, { color: theme.textSecondary }]}>
+            No tienes viajes activos
+          </Text>
+        </View>
+      );
+    }
+    return (
+      <ViajeCard
+        viaje={item}
+        onPress={() => handlePressViaje(item.id)}
+      />
+    );
+  };
 
-  const keyExtractor = (item: Viaje): string => item.id;
+  // Task 6.2 — renderSectionHeader: static for "Viajes Activos", collapsible for "Finalizados"
+  const renderSectionHeader = ({
+    section,
+  }: {
+    section: { title: string };
+  }): React.ReactElement => {
+    if (section.title === 'Finalizados') {
+      return (
+        <TouchableOpacity
+          style={[
+            styles.sectionHeader,
+            { backgroundColor: theme.surface, borderBottomColor: theme.border },
+          ]}
+          onPress={() => setFinalizadosExpanded((prev) => !prev)}
+          testID="finalizados-section-header"
+          accessibilityRole="button"
+          accessibilityLabel={
+            finalizadosExpanded
+              ? 'Colapsar sección Finalizados'
+              : 'Expandir sección Finalizados'
+          }
+        >
+          <Text style={[styles.sectionTitle, { color: theme.textPrimary }]}>
+            Finalizados
+          </Text>
+          <Text style={[styles.chevron, { color: theme.textSecondary }]}>
+            {finalizadosExpanded ? '▲' : '▼'}
+          </Text>
+        </TouchableOpacity>
+      );
+    }
+
+    // "Viajes Activos" — static header
+    return (
+      <View
+        style={[
+          styles.sectionHeader,
+          { backgroundColor: theme.surface, borderBottomColor: theme.border },
+        ]}
+        testID="activos-section-header"
+      >
+        <Text style={[styles.sectionTitle, { color: theme.primary }]}>
+          Viajes Activos
+        </Text>
+      </View>
+    );
+  };
+
+  const keyExtractor = (item: Viaje | null, index: number): string =>
+    item ? item.id : `empty-${index}`;
 
   const ListEmptyComponent = (): React.ReactElement => (
     <View style={styles.emptyContainer} testID="empty-state">
@@ -147,11 +239,12 @@ export function RutasScreen({ navigation }: Props): React.ReactElement {
         />
       )}
 
-      {/* Viajes list with pull-to-refresh (Req 2.8) */}
-      <FlatList
-        data={viajes}
+      {/* Viajes list with pull-to-refresh (Req 2.8, 3.5) — Task 6.2: SectionList */}
+      <SectionList
+        sections={sections}
         keyExtractor={keyExtractor}
         renderItem={renderItem}
+        renderSectionHeader={renderSectionHeader}
         ListEmptyComponent={!isLoading && !error ? ListEmptyComponent : undefined}
         refreshControl={
           <RefreshControl
@@ -166,7 +259,8 @@ export function RutasScreen({ navigation }: Props): React.ReactElement {
             ? styles.emptyListContent
             : styles.listContent
         }
-        testID="viajes-flatlist"
+        stickySectionHeadersEnabled={false}
+        testID="viajes-sectionlist"
       />
 
       {/* Loading overlay — shown on top during initial load (Req 2.5) */}
@@ -195,6 +289,34 @@ const styles = StyleSheet.create({
   },
   emptyText: {
     fontSize: 16,
+    textAlign: 'center',
+  },
+  // Section header shared styles (Task 6.2)
+  sectionHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+    borderBottomWidth: 1,
+  },
+  sectionTitle: {
+    fontSize: 14,
+    fontWeight: '700',
+    letterSpacing: 0.5,
+    textTransform: 'uppercase',
+  },
+  chevron: {
+    fontSize: 12,
+  },
+  // Empty-section placeholder for "No tienes viajes activos" (Req 2.16)
+  emptySection: {
+    paddingHorizontal: 16,
+    paddingVertical: 20,
+    alignItems: 'center',
+  },
+  emptySectionText: {
+    fontSize: 15,
     textAlign: 'center',
   },
 });

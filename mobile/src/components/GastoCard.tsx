@@ -26,6 +26,12 @@ interface GastoCardProps {
 /** Formatea un ISO date string a dd/mm/yyyy */
 function formatFecha(isoDate: string): string {
   try {
+    // Split YYYY-MM-DD directly to avoid UTC-to-local shift
+    const parts = isoDate.substring(0, 10).split('-');
+    if (parts.length === 3) {
+      const [yyyy, mm, dd] = parts;
+      return `${dd}/${mm}/${yyyy}`;
+    }
     const date = new Date(isoDate);
     if (isNaN(date.getTime())) return isoDate;
     const dd = String(date.getDate()).padStart(2, '0');
@@ -100,7 +106,7 @@ export function GastoCard({
       </Text>
 
       {/* Descripción (solo si existe) */}
-      {gasto.descripcion !== undefined && gasto.descripcion.length > 0 && (
+      {gasto.descripcion != null && gasto.descripcion.length > 0 && (
         <Text
           style={[styles.descripcion, { color: theme.textSecondary }]}
           testID="gasto-descripcion"

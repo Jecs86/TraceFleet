@@ -7,8 +7,11 @@
  * - Permite finalizar la ruta con confirmación (ConfirmDialog)
  * - Oculta el botón "Finalizar Ruta" cuando el estado es FINALIZADO
  * - Todos los colores provienen de useTheme()
+ * - Muestra campo editable de ingresoServicio para viajes EN_RUTA o RETRASADO (Bug 1 fix)
+ * - Valida ingreso > 0 antes de abrir ConfirmDialog (Bug 1 fix)
+ * - Envía PATCH /viajes/:id antes de POST /viajes/:id/finalizar (Bug 1 fix)
  *
- * Validates: Requirements 3.1, 3.2, 3.3, 3.4, 3.5, 3.6, 3.7, 3.8, 3.9
+ * Validates: Requirements 2.1, 2.2, 2.3, 2.4, 3.1, 3.2, 3.3, 3.4, 3.5, 3.6, 3.7, 3.8, 3.9
  */
 
 import React, { useCallback, useEffect, useState } from 'react';
@@ -17,6 +20,7 @@ import {
   ScrollView,
   StyleSheet,
   Text,
+  TextInput,
   TouchableOpacity,
   View,
 } from 'react-native';
@@ -27,6 +31,7 @@ import { ApiService } from '../services/ApiService';
 import { useTheme } from '../hooks/useTheme';
 import { LoadingOverlay } from '../components/LoadingOverlay';
 import { ErrorBanner } from '../components/ErrorBanner';
+import { useActiveViaje } from '../hooks/useActiveViaje';
 import { ConfirmDialog } from '../components/ConfirmDialog';
 
 // ─── Props ────────────────────────────────────────────────────────────────────
@@ -66,13 +71,18 @@ function estadoLabel(estado: Viaje['estado']): string {
 
 // ─── Component ────────────────────────────────────────────────────────────────
 
-export function ViajeDetailScreen({ route }: Props): React.ReactElement {
+export function ViajeDetailScreen({ route, navigation }: Props): React.ReactElement {
   const { viajeId } = route.params;
   const { theme } = useTheme();
+  const { refresh: refreshActiveViaje } = useActiveViaje();
 
   const [viaje, setViaje] = useState<Viaje | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+
+  // Bug 1 fix: state for ingresoServicio input and its validation error
+  const [ingresoServicio, setIngresoServicio] = useState<string>('');
+  const [ingresoError, setIngresoError] = useState<string | null>(null);
 
   // Dialog + finalizar state
   const [dialogVisible, setDialogVisible] = useState(false);
@@ -87,6 +97,10 @@ export function ViajeDetailScreen({ route }: Props): React.ReactElement {
     try {
       const data = await ApiService.getViajeById(viajeId);
       setViaje(data);
+      // Bug 1 fix: pre-populate ingresoServicio if already set on the viaje
+      if (data.ingresoServicio !== undefined) {
+        setIngresoServicio(String(data.ingresoServicio));
+      }
     } catch {
       setError('No se pudo cargar el detalle del viaje. Intenta de nuevo.');
     } finally {
@@ -101,6 +115,15 @@ export function ViajeDetailScreen({ route }: Props): React.ReactElement {
   // ─── Handlers ───────────────────────────────────────────────────────────────
 
   const handleFinalizarPress = (): void => {
+    // Bug 1 fix: validate ingresoServicio > 0 before opening the dialog
+    const parsed = parseFloat(ingresoServicio);
+    if (isNaN(parsed) || parsed <= 0) {
+      setIngresoError(
+        'El ingreso por servicio es requerido y debe ser mayor a 0',
+      );
+      return;
+    }
+    setIngresoError(null);
     setDialogVisible(true);
   };
 
@@ -113,9 +136,16 @@ export function ViajeDetailScreen({ route }: Props): React.ReactElement {
 
     setIsFinalizing(true);
     try {
-      const updated = await ApiService.finalizarViaje(viaje.id);
-      setViaje(updated);
+      // Bug 1 fix: PATCH ingresoServicio first, then POST finalizar
+      await ApiService.updateViaje(viaje.id, {
+        ingresoServicio: parseFloat(ingresoServicio),
+      });
+      await ApiService.finalizarViaje(viaje.id);
       setDialogVisible(false);
+      // Notify all screens that the active trip has changed
+      refreshActiveViaje();
+      // Navigate back to the trips list automatically
+      navigation.goBack();
     } catch {
       setDialogVisible(false);
       setError('No se pudo finalizar el viaje. Intenta de nuevo.');
@@ -267,28 +297,77 @@ export function ViajeDetailScreen({ route }: Props): React.ReactElement {
             </View>
           )}
 
-          {/* ── Tarjeta de ingresos (opcional) ───────────────────────────── */}
-          {viaje.ingresoServicio !== undefined && (
+          {/* ── Tarjeta de ingresos ───────────────────────────────────────── */}
+          {viaje.estado === 'FINALIZADO' ? (
+            /* Read-only mode for finalized trips (Req 2.4 preservation) */
+            viaje.ingresoServicio !== undefined && (
+              <View
+                style={[
+                  styles.card,
+                  { backgroundColor: theme.card, borderColor: theme.border },
+                ]}
+                testID="ingreso-card"
+              >
+                <Text style={[styles.cardTitle, { color: theme.textPrimary }]}>
+                  Ingreso
+                </Text>
+                <DetailRow
+                  label="Ingreso por servicio"
+                  value={`$${viaje.ingresoServicio.toFixed(2)}`}
+                  theme={theme}
+                  testID="field-ingresoServicio"
+                />
+              </View>
+            )
+          ) : (
+            /* Bug 1 fix (Req 2.1): Editable input for EN_RUTA / RETRASADO */
             <View
               style={[
                 styles.card,
                 { backgroundColor: theme.card, borderColor: theme.border },
               ]}
-              testID="ingreso-card"
+              testID="ingreso-card-editable"
             >
               <Text style={[styles.cardTitle, { color: theme.textPrimary }]}>
                 Ingreso
               </Text>
-              <DetailRow
-                label="Ingreso por servicio"
-                value={`$${viaje.ingresoServicio.toFixed(2)}`}
-                theme={theme}
-                testID="field-ingresoServicio"
+              <Text style={[styles.inputLabel, { color: theme.textSecondary }]}>
+                Ingreso por servicio ($)
+              </Text>
+              <TextInput
+                style={[
+                  styles.input,
+                  {
+                    backgroundColor: theme.surface,
+                    borderColor:
+                      ingresoError !== null ? theme.error : theme.border,
+                    color: theme.textPrimary,
+                  },
+                ]}
+                keyboardType="decimal-pad"
+                testID="input-ingreso-servicio"
+                value={ingresoServicio}
+                onChangeText={(text) => {
+                  setIngresoServicio(text);
+                  if (ingresoError !== null) {
+                    setIngresoError(null);
+                  }
+                }}
+                placeholder="0.00"
+                placeholderTextColor={theme.textSecondary}
+                accessibilityLabel="Ingreso por servicio ($)"
               />
+              {/* Bug 1 fix (Req 2.2): inline validation error */}
+              {ingresoError !== null && (
+                <Text
+                  style={[styles.errorText, { color: theme.error }]}
+                  testID="ingreso-error-text"
+                >
+                  {ingresoError}
+                </Text>
+              )}
             </View>
           )}
-
-          {/* ── Botón Finalizar Ruta ─────────────────────────────────────── */}
           {viaje.estado !== 'FINALIZADO' && (
             <TouchableOpacity
               style={[
@@ -343,7 +422,7 @@ export function ViajeDetailScreen({ route }: Props): React.ReactElement {
 interface DetailRowProps {
   label: string;
   value: string;
-  theme: import('../theme/WarmTheme').WarmTheme;
+  theme: import('../theme/AppTheme').AppTheme;
   testID?: string;
 }
 
@@ -423,6 +502,25 @@ const styles = StyleSheet.create({
     fontWeight: '500',
     flex: 1,
     textAlign: 'right',
+  },
+  // Ingreso input (Bug 1 fix)
+  inputLabel: {
+    fontSize: 13,
+    fontWeight: '600',
+    marginBottom: 6,
+  },
+  input: {
+    borderWidth: 1,
+    borderRadius: 8,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    fontSize: 15,
+    marginBottom: 4,
+  },
+  errorText: {
+    fontSize: 12,
+    marginTop: 2,
+    marginBottom: 4,
   },
   // Finalizar button
   finalizarButton: {

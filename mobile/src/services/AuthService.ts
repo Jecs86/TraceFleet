@@ -25,7 +25,8 @@ export type LoginResult =
 // ─── Constantes ───────────────────────────────────────────────────────────────
 
 const TOKEN_KEY = 'tracefleet_jwt';
-const API_BASE_URL = 'http://localhost:3000';
+const API_BASE_URL =
+  process.env.EXPO_PUBLIC_API_URL ?? 'http://localhost:3000';
 
 // ─── Implementación ───────────────────────────────────────────────────────────
 

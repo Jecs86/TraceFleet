@@ -10,8 +10,8 @@
 
 import React, { createContext, useState, useEffect, useCallback } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { lightTheme, darkTheme } from '../theme/WarmTheme';
-import type { WarmTheme } from '../theme/WarmTheme';
+import { lightTheme, darkTheme } from '../theme/AppTheme';
+import type { AppTheme } from '../theme/AppTheme';
 
 // ─── Constantes ───────────────────────────────────────────────────────────────
 
@@ -21,7 +21,7 @@ const THEME_STORAGE_KEY = 'tracefleet_theme_mode';
 
 export interface ThemeContextValue {
   mode: 'light' | 'dark';
-  theme: WarmTheme;
+  theme: AppTheme;
   toggleTheme: () => void;
 }
 

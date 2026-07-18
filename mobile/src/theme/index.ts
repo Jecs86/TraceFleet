@@ -1,2 +1,2 @@
-export type { WarmTheme } from './WarmTheme';
-export { lightTheme, darkTheme } from './WarmTheme';
+export type { AppTheme } from './AppTheme';
+export { lightTheme, darkTheme } from './AppTheme';

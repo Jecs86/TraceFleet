@@ -10,15 +10,18 @@
 import { NavigationContainer } from '@react-navigation/native';
 import { ThemeProvider } from './src/contexts/ThemeContext';
 import { AuthProvider } from './src/contexts/AuthContext';
+import { ActiveViajeProvider } from './src/contexts/ActiveViajeContext';
 import { RootNavigator } from './src/navigation/RootNavigator';
 
 export default function App() {
   return (
     <ThemeProvider>
       <AuthProvider>
-        <NavigationContainer>
-          <RootNavigator />
-        </NavigationContainer>
+        <ActiveViajeProvider>
+          <NavigationContainer>
+            <RootNavigator />
+          </NavigationContainer>
+        </ActiveViajeProvider>
       </AuthProvider>
     </ThemeProvider>
   );
