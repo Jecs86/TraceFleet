@@ -1,9 +1,12 @@
 {
   "expo": {
-    "name": "mobile",
-    "slug": "mobile",
+    "name": "TraceFleet",
+    "slug": "tracefleet",
     "version": "1.0.0",
     "orientation": "portrait",
+    "updates": {
+      "enabled": false
+    },
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "light",
     "ios": {
@@ -20,6 +23,9 @@
     },
     "web": {
       "favicon": "./assets/favicon.png"
-    }
+    },
+    "plugins": [
+      "@react-native-community/datetimepicker"
+    ]
   }
 }
