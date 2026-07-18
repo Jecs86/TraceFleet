@@ -3,6 +3,7 @@ import { APP_GUARD } from '@nestjs/core';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { PrismaModule } from './prisma/prisma.module';
+import { SupabaseStorageModule } from './storage/supabase-storage.module';
 import { EmpresasModule } from './empresas/empresas.module';
 import { AuthModule } from './auth/auth.module';
 import { UsuariosModule } from './usuarios/usuarios.module';
@@ -12,11 +13,13 @@ import { ViajesModule } from './viajes/viajes.module';
 import { CombustibleModule } from './combustible/combustible.module';
 import { MantenimientosModule } from './mantenimientos/mantenimientos.module';
 import { GastosModule } from './gastos/gastos.module';
+import { PrecioCombustibleModule } from './precio-combustible/precio-combustible.module';
 import { RolesGuard } from './auth/roles.guard';
 
 @Module({
   imports: [
     PrismaModule,
+    SupabaseStorageModule,
     AuthModule,
     EmpresasModule,
     UsuariosModule,
@@ -26,6 +29,7 @@ import { RolesGuard } from './auth/roles.guard';
     CombustibleModule,
     GastosModule,
     MantenimientosModule,
+    PrecioCombustibleModule,
   ],
   controllers: [AppController],
   providers: [

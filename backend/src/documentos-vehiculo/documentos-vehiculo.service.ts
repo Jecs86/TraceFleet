@@ -7,16 +7,22 @@ import { PrismaService } from '../prisma/prisma.service';
 import { RolUsuario, Usuario } from '../generated/prisma/client';
 import { CreateDocumentoVehiculoDto } from './dto/create-documento-vehiculo.dto';
 import { UpdateDocumentoVehiculoDto } from './dto/update-documento-vehiculo.dto';
+import { SupabaseStorageService } from '../storage/supabase-storage.service';
 
 type AuthUser = Usuario & { empresa: any };
 
 @Injectable()
 export class DocumentosVehiculoService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly storage: SupabaseStorageService,
+  ) {}
 
+  /** Crea el registro de documento sin archivo. El archivo se sube con uploadArchivo(). */
   async create(createDto: CreateDocumentoVehiculoDto, currentUser: AuthUser) {
     const vehiculo = await this.prisma.vehiculo.findUnique({
       where: { id: createDto.vehiculoId },
+      include: { empresa: true },
     });
 
     if (
@@ -58,7 +64,7 @@ export class DocumentosVehiculoService {
   async findOne(id: string, currentUser: AuthUser) {
     const documento = await this.prisma.documentoVehiculo.findUnique({
       where: { id },
-      include: { vehiculo: true },
+      include: { vehiculo: { include: { empresa: true } } },
     });
 
     if (!documento) {
@@ -75,7 +81,11 @@ export class DocumentosVehiculoService {
     return documento;
   }
 
-  async update(id: string, updateDto: UpdateDocumentoVehiculoDto, currentUser: AuthUser) {
+  async update(
+    id: string,
+    updateDto: UpdateDocumentoVehiculoDto,
+    currentUser: AuthUser,
+  ) {
     await this.findOne(id, currentUser);
 
     if (updateDto.vehiculoId) {
@@ -108,7 +118,48 @@ export class DocumentosVehiculoService {
   }
 
   async remove(id: string, currentUser: AuthUser) {
-    await this.findOne(id, currentUser);
+    const documento = await this.findOne(id, currentUser);
+
+    // Eliminar archivo del storage si tiene URL
+    if (documento.archivoUrl) {
+      await this.storage.deleteDocumento(documento.archivoUrl);
+    }
+
     return this.prisma.documentoVehiculo.delete({ where: { id } });
+  }
+
+  /**
+   * POST /documentos-vehiculo/:id/archivo
+   * Sube el archivo a Storage y actualiza archivoUrl en BD.
+   * Ruta: documentos/{empresa}/{placa}/{tipoDocumento}-{timestamp}.{ext}
+   */
+  async uploadArchivo(
+    id: string,
+    currentUser: AuthUser,
+    buffer: Buffer,
+    mimeType: string,
+    extension: string,
+  ) {
+    const documento = await this.findOne(id, currentUser);
+    const vehiculo = documento.vehiculo;
+
+    // Si ya tenía un archivo, eliminarlo antes de subir el nuevo
+    if (documento.archivoUrl) {
+      await this.storage.deleteDocumento(documento.archivoUrl);
+    }
+
+    const archivoUrl = await this.storage.uploadDocumentoVehiculo(
+      vehiculo.empresa.nombre,
+      vehiculo.placa,
+      documento.tipoDocumento,
+      buffer,
+      mimeType,
+      extension,
+    );
+
+    return this.prisma.documentoVehiculo.update({
+      where: { id },
+      data: { archivoUrl },
+    });
   }
 }

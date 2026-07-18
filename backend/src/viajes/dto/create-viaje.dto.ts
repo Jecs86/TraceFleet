@@ -3,6 +3,7 @@ import {
   IsNotEmpty,
   IsNumber,
   IsOptional,
+  IsPositive,
   IsString,
   IsUUID,
 } from 'class-validator';
@@ -47,4 +48,10 @@ export class CreateViajeDto {
   @IsOptional()
   @IsString()
   unidadMedida?: string;
+
+  /** Ingreso por flete / servicio que paga el cliente por este viaje. */
+  @IsOptional()
+  @IsNumber()
+  @IsPositive()
+  ingresoServicio?: number;
 }
