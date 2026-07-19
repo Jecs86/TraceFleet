@@ -1,21 +1,46 @@
+import React, { useState, useEffect } from 'react';
 import { 
   LayoutDashboard, Truck, Map, Droplet, 
   Wrench, FileText, Folder, Settings, 
   Bell, UserCircle 
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
+import { 
+  BarChart, Bar, XAxis, YAxis, CartesianGrid, 
+  Tooltip as RechartsTooltip, ResponsiveContainer 
+} from 'recharts';
 import logoVertical from '../assets/images/logo-vertical.png';
 
+// Importamos el servicio
+import { combustibleService, type CombustibleDashboardData } from '../services/combustible.service';
+
 export default function Combustible() {
-  
-  // Datos temporales para la tabla
-  const solicitudes = [
-    { placa: '#A01', chofer: 'Bryan S.', estado: 'Diferencia detectada', color: 'bg-red-500' },
-    { placa: '#A03', chofer: 'Carlos V.', estado: 'En Ruta', color: 'bg-green-500' },
-    { placa: '#A06', chofer: 'Luis V.', estado: 'Revisión Normal', color: 'bg-yellow-400' },
-    { placa: '#A08', chofer: 'Pedro M.', estado: 'En Ruta', color: 'bg-green-500' },
-    { placa: '#A12', chofer: 'Jorge T.', estado: 'Diferencia detectada', color: 'bg-red-500' },
-  ];
+  const [data, setData] = useState<CombustibleDashboardData | null>(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        const result = await combustibleService.getDashboardData();
+        setData(result);
+      } catch (error) {
+        console.error("Error cargando dashboard de combustible:", error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchData();
+  }, []);
+
+  // Función helper para asignar colores a los estados (Gestalt visual)
+  const getEstadoColor = (estado: string) => {
+    const estadoLower = estado.toLowerCase();
+    if (estadoLower.includes('diferencia') || estadoLower.includes('anomalía')) return 'bg-red-500';
+    if (estadoLower.includes('ruta') || estadoLower.includes('aprobada')) return 'bg-green-500';
+    if (estadoLower.includes('revisión') || estadoLower.includes('pendiente')) return 'bg-yellow-400';
+    return 'bg-gray-400';
+  };
 
   return (
     <div className="flex h-screen bg-[#E2E8F0] font-sans w-full">
@@ -52,11 +77,11 @@ export default function Combustible() {
                 <Map className="w-5 h-5" /> Rutas
               </button>
             </li>
-            {/* ELEMENTO ACTIVO: Combustible */}
+            {/* ACTIVO: Combustible */}
             <li>
-              <button className="w-full flex items-center gap-3 px-6 py-3 bg-blue-50 border-r-4 border-[#3779CB] text-[#3779CB] font-semibold transition-colors">
+              <Link to="/combustible" className="w-full flex items-center gap-3 px-6 py-3 bg-blue-50 border-r-4 border-[#3779CB] text-[#3779CB] font-semibold transition-colors">
                 <Droplet className="w-5 h-5" /> Combustible
-              </button>
+              </Link>
             </li>
             {[
               { name: 'Mantenimiento', icon: Wrench },
@@ -94,73 +119,106 @@ export default function Combustible() {
         </header>
 
         {/* CONTENIDO PRINCIPAL */}
-        <main className="flex-1 overflow-y-auto p-8 flex flex-col gap-6">
+        <main className="flex-1 overflow-y-auto p-8 w-full max-w-7xl mx-auto">
           
-          {/* 1. Tarjetas de Estadísticas (4 columnas) */}
-          <div className="grid grid-cols-2 lg:grid-cols-4 gap-6">
-            
-            <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6 flex flex-col items-center justify-center">
-              <span className="text-gray-500 text-sm font-medium mb-1">Pendientes</span>
-              <span className="text-3xl font-extrabold text-[#1A2847]">3</span>
+          {loading ? (
+            <div className="flex items-center justify-center h-full">
+              <span className="text-gray-500 font-medium text-lg">Cargando métricas de combustible...</span>
             </div>
-            
-            <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6 flex flex-col items-center justify-center">
-              <span className="text-gray-500 text-sm font-medium mb-1">Auditadas</span>
-              <span className="text-3xl font-extrabold text-[#1A2847]">42</span>
-            </div>
-            
-            <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6 flex flex-col items-center justify-center">
-              <span className="text-gray-500 text-sm font-medium mb-1">Anomalías</span>
-              <span className="text-3xl font-extrabold text-[#1A2847]">2</span>
-            </div>
-            
-            <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6 flex flex-col items-center justify-center">
-              <span className="text-gray-500 text-sm font-medium mb-1">Aprobadas</span>
-              <span className="text-3xl font-extrabold text-[#1A2847]">38</span>
-            </div>
-
-          </div>
-
-          {/* 2. Solicitudes Recientes (Con barra de Scroll) */}
-          <div className="bg-white rounded-xl shadow-md border border-gray-100 p-6 flex flex-col">
-            <h3 className="text-2xl font-bold text-[#1A2847] mb-6">Solicitudes Recientes</h3>
-            
-            {/* Cabecera de la tabla */}
-            <div className="grid grid-cols-3 gap-4 font-bold text-black mb-4 px-4">
-              <div>Placa</div>
-              <div>Chofer</div>
-              <div>Estado</div>
-            </div>
-
-            {/* Contenedor con Scroll para las filas */}
-            <div className="flex-1 overflow-y-auto max-h-60 pr-2">
-              <div className="flex flex-col gap-4">
-                {solicitudes.map((solicitud, index) => (
-                  <div key={index} className="grid grid-cols-3 gap-4 items-center bg-gray-50 p-4 rounded-lg border border-gray-100">
-                    <div className="font-semibold text-gray-700">{solicitud.placa}</div>
-                    <div className="text-gray-600">{solicitud.chofer}</div>
-                    <div className="flex items-center gap-3">
-                      <div className={`w-3.5 h-3.5 rounded-full ${solicitud.color} shadow-sm`}></div>
-                      <span className="text-gray-700 font-medium">{solicitud.estado}</span>
-                    </div>
-                  </div>
-                ))}
+          ) : (
+            <div className="flex flex-col gap-6 w-full">
+              
+              {/* Tarjetas Superiores */}
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 w-full">
+                {/* Pendientes */}
+                <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6 flex flex-col items-center justify-center">
+                  <span className="text-sm text-gray-500 font-medium mb-2">Pendientes</span>
+                  <span className="text-4xl font-extrabold text-[#1A2847]">{data?.tarjetas.pendientes || 0}</span>
+                </div>
+                {/* Auditadas */}
+                <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6 flex flex-col items-center justify-center">
+                  <span className="text-sm text-gray-500 font-medium mb-2">Auditadas</span>
+                  <span className="text-4xl font-extrabold text-[#1A2847]">{data?.tarjetas.auditadas || 0}</span>
+                </div>
+                {/* Anomalías */}
+                <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6 flex flex-col items-center justify-center">
+                  <span className="text-sm text-gray-500 font-medium mb-2">Anomalías</span>
+                  <span className="text-4xl font-extrabold text-[#1A2847]">{data?.tarjetas.anomalias || 0}</span>
+                </div>
+                {/* Aprobadas */}
+                <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6 flex flex-col items-center justify-center">
+                  <span className="text-sm text-gray-500 font-medium mb-2">Aprobadas</span>
+                  <span className="text-4xl font-extrabold text-[#1A2847]">{data?.tarjetas.aprobadas || 0}</span>
+                </div>
               </div>
-            </div>
-          </div>
 
-          {/* 3. Consumo por Vehículo (Contenedor vacío) */}
-          <div className="bg-white rounded-xl shadow-md border border-gray-100 p-6 flex flex-col min-h-[300px]">
-            <h3 className="text-2xl font-bold text-[#1A2847] mb-6">Consumo por Vehículo</h3>
-            
-            {/* Espacio reservado para el gráfico */}
-            <div className="flex-1 bg-gray-50 rounded-lg border border-gray-200 border-dashed flex items-center justify-center">
-              <span className="text-gray-400 font-medium">Contenedor reservado para el gráfico (Recharts / Chart.js)</span>
+              {/* Contenedor Medio: Solicitudes Recientes */}
+              <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-8 flex flex-col min-h-[350px]">
+                <h3 className="text-2xl font-bold text-[#1A2847] mb-8 text-center">Solicitudes Recientes</h3>
+                
+                {/* Cabecera de la tabla */}
+                <div className="grid grid-cols-3 w-full mb-4 px-6 text-center">
+                  <span className="font-bold text-[#1A2847]">Placa</span>
+                  <span className="font-bold text-[#1A2847]">Chofer</span>
+                  <span className="font-bold text-[#1A2847]">Estado</span>
+                </div>
+
+                {/* Lista Scrolleable */}
+                <div className="flex-1 overflow-y-auto flex flex-col gap-3 pr-2 custom-scrollbar">
+                  {data?.solicitudesRecientes && data.solicitudesRecientes.length > 0 ? (
+                    data.solicitudesRecientes.map((solicitud) => (
+                      <Link 
+                        to={`/combustible/${solicitud.id}`} 
+                        key={solicitud.id} 
+                        className="grid grid-cols-3 items-center w-full bg-slate-50 border border-slate-100 rounded-lg p-4 hover:bg-slate-100 transition-colors text-center cursor-pointer"
+                      >
+                        <span className="text-gray-600 font-medium uppercase">{solicitud.placa}</span>
+                        <span className="text-gray-600">{solicitud.chofer}</span>
+                        <div className="flex items-center justify-center gap-3">
+                          <div className={`w-3.5 h-3.5 rounded-full shadow-sm ${getEstadoColor(solicitud.estado)}`}></div>
+                          <span className="text-gray-600 truncate">{solicitud.estado}</span>
+                        </div>
+                      </Link>
+                    ))
+                  ) : (
+                    <div className="flex items-center justify-center h-full">
+                      <span className="text-gray-400 italic">No hay registros recientes.</span>
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* Contenedor Inferior: Gráfico de Consumo */}
+              <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-8 flex flex-col h-[400px]">
+                <h3 className="text-2xl font-bold text-[#1A2847] mb-8 text-center">Consumo por Vehículo</h3>
+                <div className="flex-1 w-full">
+                  {data?.consumoPorVehiculo && data.consumoPorVehiculo.length > 0 ? (
+                    <ResponsiveContainer width="100%" height="100%">
+                      <BarChart data={data.consumoPorVehiculo} margin={{ top: 10, right: 30, left: 0, bottom: 0 }}>
+                        <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#E2E8F0" />
+                        <XAxis dataKey="placa" axisLine={false} tickLine={false} tick={{ fill: '#64748b' }} dy={10} />
+                        <YAxis axisLine={false} tickLine={false} tick={{ fill: '#64748b' }} dx={-10} />
+                        <RechartsTooltip 
+                          formatter={(value: any) => [`${Number(value).toFixed(2)} Galones`, 'Consumo']}
+                          cursor={{ fill: '#f1f5f9' }}
+                        />
+                        <Bar dataKey="galones" fill="#3779CB" radius={[4, 4, 0, 0]} maxBarSize={60} />
+                      </BarChart>
+                    </ResponsiveContainer>
+                  ) : (
+                    <div className="flex items-center justify-center h-full border-2 border-dashed border-gray-200 rounded-lg">
+                      <span className="text-gray-400">Contenedor reservado para el gráfico (Recharts)</span>
+                    </div>
+                  )}
+                </div>
+              </div>
+
             </div>
-          </div>
+          )}
 
         </main>
       </div>
+      
     </div>
   );
 }
