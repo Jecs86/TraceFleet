@@ -2,9 +2,9 @@ import axios from 'axios';
 
 // 1. Instancia base de Axios
 const api = axios.create({
-  // Apuntamos al servidor local por defecto. 
+  // Apuntamos al servidor local por defecto.  baseURL: 'http://localhost:3000'
   // Luego puedes cambiar esto por una variable de entorno como import.meta.env.VITE_API_URL
-  baseURL: 'http://localhost:3000', 
+  baseURL: import.meta.env.VITE_API_URL, 
   headers: {
     'Content-Type': 'application/json',
   },

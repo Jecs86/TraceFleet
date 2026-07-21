@@ -50,7 +50,9 @@ export class GastosService {
     return this.prisma.gastoExtra.create({
       data: {
         ...createGastoDto,
-        fecha: createGastoDto.fecha ? new Date(createGastoDto.fecha) : undefined,
+        fecha: createGastoDto.fecha
+          ? new Date(createGastoDto.fecha)
+          : undefined,
       },
     });
   }
@@ -88,7 +90,11 @@ export class GastosService {
     return gasto;
   }
 
-  async update(id: string, updateGastoDto: UpdateGastoDto, currentUser: AuthUser) {
+  async update(
+    id: string,
+    updateGastoDto: UpdateGastoDto,
+    currentUser: AuthUser,
+  ) {
     await this.findOne(id, currentUser);
     const isAdmin = currentUser.rol === RolUsuario.ADMIN;
     const empresaId = currentUser.empresaId!;
@@ -119,7 +125,9 @@ export class GastosService {
       where: { id },
       data: {
         ...updateGastoDto,
-        fecha: updateGastoDto.fecha ? new Date(updateGastoDto.fecha) : undefined,
+        fecha: updateGastoDto.fecha
+          ? new Date(updateGastoDto.fecha)
+          : undefined,
       },
     });
   }

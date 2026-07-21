@@ -51,7 +51,10 @@ export class EmpresasService {
     currentUser: AuthUser,
   ) {
     await this.findOne(id, currentUser);
-    return this.prisma.empresa.update({ where: { id }, data: updateEmpresaDto });
+    return this.prisma.empresa.update({
+      where: { id },
+      data: updateEmpresaDto,
+    });
   }
 
   async remove(id: string, currentUser: AuthUser) {

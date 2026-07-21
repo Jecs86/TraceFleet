@@ -25,10 +25,10 @@ export class VehiculosService {
     // GERENTE/CHOFER siempre crean en su propia empresa.
     const empresaId =
       currentUser.rol === RolUsuario.ADMIN
-        ? (createVehiculoDto as any).empresaId ??
+        ? ((createVehiculoDto as any).empresaId ??
           (() => {
             throw new BadRequestException('ADMIN debe especificar empresaId');
-          })()
+          })())
         : currentUser.empresaId!;
 
     // eslint-disable-next-line @typescript-eslint/no-unused-vars

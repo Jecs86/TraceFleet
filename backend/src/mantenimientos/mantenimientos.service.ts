@@ -70,7 +70,11 @@ export class MantenimientosService {
     return mantenimiento;
   }
 
-  async update(id: string, updateDto: UpdateMantenimientoDto, currentUser: AuthUser) {
+  async update(
+    id: string,
+    updateDto: UpdateMantenimientoDto,
+    currentUser: AuthUser,
+  ) {
     await this.findOne(id, currentUser);
 
     if (updateDto.vehiculoId) {

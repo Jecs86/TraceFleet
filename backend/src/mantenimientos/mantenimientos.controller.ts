@@ -18,16 +18,17 @@ import { Usuario } from '../generated/prisma/client';
 @UseGuards(JwtAuthGuard)
 @Controller('mantenimientos')
 export class MantenimientosController {
-  constructor(
-    private readonly mantenimientosService: MantenimientosService,
-  ) {}
+  constructor(private readonly mantenimientosService: MantenimientosService) {}
 
   @Post()
   create(
     @Body() createMantenimientoDto: CreateMantenimientoDto,
     @CurrentUser() currentUser: Usuario & { empresa: any },
   ) {
-    return this.mantenimientosService.create(createMantenimientoDto, currentUser);
+    return this.mantenimientosService.create(
+      createMantenimientoDto,
+      currentUser,
+    );
   }
 
   @Get()

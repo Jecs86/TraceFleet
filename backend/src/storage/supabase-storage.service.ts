@@ -1,4 +1,8 @@
-import { Injectable, InternalServerErrorException, Logger } from '@nestjs/common';
+import {
+  Injectable,
+  InternalServerErrorException,
+  Logger,
+} from '@nestjs/common';
 import { createClient, SupabaseClient } from '@supabase/supabase-js';
 import sharp from 'sharp';
 
@@ -13,12 +17,12 @@ import sharp from 'sharp';
  */
 
 const BUCKET_DOCUMENTOS = 'documentos';
-const BUCKET_IMAGENES   = 'imagenes';
+const BUCKET_IMAGENES = 'imagenes';
 
 // Configuración de compresión para imágenes de vehículos
 const IMAGE_CONFIG = {
-  width:   800,    // px máximo — suficiente para vista en dashboard
-  quality: 75,     // % calidad WebP (buen balance tamaño/calidad)
+  width: 800, // px máximo — suficiente para vista en dashboard
+  quality: 75, // % calidad WebP (buen balance tamaño/calidad)
 };
 
 @Injectable()
@@ -52,13 +56,10 @@ export class SupabaseStorageService {
    * Sobreescribe si ya existe (upsert: true).
    * @returns URL pública permanente
    */
-  async uploadImagenVehiculo(
-    placa: string,
-    buffer: Buffer,
-  ): Promise<string> {
+  async uploadImagenVehiculo(placa: string, buffer: Buffer): Promise<string> {
     // Normalizar placa para nombre de archivo (quitar guiones, espacios → mayúsculas)
     const nombreArchivo = `${placa.replace(/[^a-zA-Z0-9]/g, '').toUpperCase()}.webp`;
-    const storagePath   = nombreArchivo; // raíz del bucket "imagenes"
+    const storagePath = nombreArchivo; // raíz del bucket "imagenes"
 
     // Comprimir con sharp antes de subir
     const comprimida = await sharp(buffer)
@@ -90,9 +91,7 @@ export class SupabaseStorageService {
   /** Elimina la imagen de un vehículo. No lanza error si no existe. */
   async deleteImagenVehiculo(placa: string): Promise<void> {
     const nombreArchivo = `${placa.replace(/[^a-zA-Z0-9]/g, '').toUpperCase()}.webp`;
-    await this.client.storage
-      .from(BUCKET_IMAGENES)
-      .remove([nombreArchivo]);
+    await this.client.storage.from(BUCKET_IMAGENES).remove([nombreArchivo]);
   }
 
   // ─────────────────────────────────────────────────────────────────────────────
@@ -119,9 +118,9 @@ export class SupabaseStorageService {
     extension: string,
   ): Promise<string> {
     const carpetaEmpresa = this.slugify(nombreEmpresa);
-    const carpetaPlaca   = placa.replace(/[^a-zA-Z0-9]/g, '').toUpperCase();
-    const nombreArchivo  = `${this.slugify(tipoDocumento)}-${Date.now()}.${extension}`;
-    const storagePath    = `${carpetaEmpresa}/${carpetaPlaca}/${nombreArchivo}`;
+    const carpetaPlaca = placa.replace(/[^a-zA-Z0-9]/g, '').toUpperCase();
+    const nombreArchivo = `${this.slugify(tipoDocumento)}-${Date.now()}.${extension}`;
+    const storagePath = `${carpetaEmpresa}/${carpetaPlaca}/${nombreArchivo}`;
 
     const { error } = await this.client.storage
       .from(BUCKET_DOCUMENTOS)
@@ -131,7 +130,10 @@ export class SupabaseStorageService {
       });
 
     if (error) {
-      this.logger.error(`Error subiendo documento ${storagePath}:`, error.message);
+      this.logger.error(
+        `Error subiendo documento ${storagePath}:`,
+        error.message,
+      );
       throw new InternalServerErrorException(
         `No se pudo subir el documento: ${error.message}`,
       );

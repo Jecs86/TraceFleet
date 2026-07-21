@@ -4,7 +4,11 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
-import { RolUsuario, TipoCombustible, Usuario } from '../generated/prisma/client';
+import {
+  RolUsuario,
+  TipoCombustible,
+  Usuario,
+} from '../generated/prisma/client';
 import { CreateCombustibleDto } from './dto/create-combustible.dto';
 import { UpdateCombustibleDto } from './dto/update-combustible.dto';
 
@@ -64,28 +68,31 @@ export class CombustibleService {
     }
 
     // 2. Precio real pagado por galón
-    const precioPorGalon = createDto.galones > 0
-      ? createDto.costoTotal / createDto.galones
-      : null;
+    const precioPorGalon =
+      createDto.galones > 0 ? createDto.costoTotal / createDto.galones : null;
 
     // 3. Comparar contra el precio oficial vigente para detectar anomalía de precio
     //    Si no hay precio oficial cargado, se omite la verificación de precio.
     const precioOficial = await this.prisma.precioCombustible.findUnique({
-      where: { tipo: createDto.tipoCombustible as TipoCombustible },
+      where: { tipo: createDto.tipoCombustible },
     });
 
     // 4. Lógica de anomalía combinada:
     //    - Rendimiento bajo el mínimo esperado (< 8 km/galón), O
     //    - Precio pagado supera en más de un 10% el precio oficial vigente
     const RENDIMIENTO_MINIMO_ESPERADO = 8; // km/galón — umbral base MVP
-    const TOLERANCIA_PRECIO = 0.10;        // 10% de margen sobre el precio oficial
+    const TOLERANCIA_PRECIO = 0.1; // 10% de margen sobre el precio oficial
 
     let esAnomalia = false;
-    if (rendimientoCalculado !== null && rendimientoCalculado < RENDIMIENTO_MINIMO_ESPERADO) {
+    if (
+      rendimientoCalculado !== null &&
+      rendimientoCalculado < RENDIMIENTO_MINIMO_ESPERADO
+    ) {
       esAnomalia = true;
     }
     if (precioOficial && precioPorGalon !== null) {
-      const limiteAceptable = precioOficial.precioPorGalon * (1 + TOLERANCIA_PRECIO);
+      const limiteAceptable =
+        precioOficial.precioPorGalon * (1 + TOLERANCIA_PRECIO);
       if (precioPorGalon > limiteAceptable) {
         esAnomalia = true;
       }
@@ -97,7 +104,7 @@ export class CombustibleService {
     return this.prisma.registroCombustible.create({
       data: {
         ...createDto,
-        tipoCombustible: createDto.tipoCombustible as TipoCombustible,
+        tipoCombustible: createDto.tipoCombustible,
         rendimientoCalculado,
         precioPorGalon,
         estado,
@@ -139,7 +146,11 @@ export class CombustibleService {
     return registro;
   }
 
-  async update(id: string, updateDto: UpdateCombustibleDto, currentUser: AuthUser) {
+  async update(
+    id: string,
+    updateDto: UpdateCombustibleDto,
+    currentUser: AuthUser,
+  ) {
     await this.findOne(id, currentUser);
     const isAdmin = currentUser.rol === RolUsuario.ADMIN;
     const empresaId = currentUser.empresaId!;

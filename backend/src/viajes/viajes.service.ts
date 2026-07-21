@@ -5,7 +5,11 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
-import { RolUsuario, TipoCombustible, Usuario } from '../generated/prisma/client';
+import {
+  RolUsuario,
+  TipoCombustible,
+  Usuario,
+} from '../generated/prisma/client';
 import { CreateViajeDto } from './dto/create-viaje.dto';
 import { UpdateViajeDto } from './dto/update-viaje.dto';
 
@@ -93,7 +97,11 @@ export class ViajesService {
     return viaje;
   }
 
-  async update(id: string, updateViajeDto: UpdateViajeDto, currentUser: AuthUser) {
+  async update(
+    id: string,
+    updateViajeDto: UpdateViajeDto,
+    currentUser: AuthUser,
+  ) {
     await this.findOne(id, currentUser);
     const empresaId = currentUser.empresaId!;
 
@@ -103,7 +111,8 @@ export class ViajesService {
       });
       if (
         !vehiculo ||
-        (currentUser.rol !== RolUsuario.ADMIN && vehiculo.empresaId !== empresaId)
+        (currentUser.rol !== RolUsuario.ADMIN &&
+          vehiculo.empresaId !== empresaId)
       ) {
         throw new ForbiddenException(
           'El vehículo no existe o no pertenece a tu empresa',
@@ -277,18 +286,27 @@ export class ViajesService {
     if (
       currentUser.rol !== RolUsuario.ADMIN &&
       viaje.empresaId !== currentUser.empresaId
-    ) throw new ForbiddenException('No tienes acceso a este viaje');
+    )
+      throw new ForbiddenException('No tienes acceso a este viaje');
     if (viaje.estado === 'FINALIZADO')
       throw new BadRequestException('Este viaje ya fue finalizado');
     if (viaje.liquidacion)
-      throw new BadRequestException('Este viaje ya tiene una liquidación registrada');
+      throw new BadRequestException(
+        'Este viaje ya tiene una liquidación registrada',
+      );
 
     const registros = viaje.registrosCombustible;
 
     // 2. Totales directos
-    const totalCombustibleReal = registros.reduce((sum, r) => sum + r.costoTotal, 0);
+    const totalCombustibleReal = registros.reduce(
+      (sum, r) => sum + r.costoTotal,
+      0,
+    );
     const totalGastosExtra = viaje.gastos.reduce((sum, g) => sum + g.monto, 0);
-    const totalGalonesConsumidos = registros.reduce((sum, r) => sum + r.galones, 0);
+    const totalGalonesConsumidos = registros.reduce(
+      (sum, r) => sum + r.galones,
+      0,
+    );
 
     // 3. Distancia real del viaje: odómetro final - odómetro inicial
     //    (distancia es el km del odómetro en cada tanqueo, NO km recorridos en ese tramo)
@@ -308,7 +326,11 @@ export class ViajesService {
     let discrepanciaPrecioCombustible = 0;
     for (const r of registros) {
       const precioOficial = mapaPrecios.get(r.tipoCombustible);
-      if (precioOficial && r.precioPorGalon !== null && r.precioPorGalon !== undefined) {
+      if (
+        precioOficial &&
+        r.precioPorGalon !== null &&
+        r.precioPorGalon !== undefined
+      ) {
         const sobrecoste = (r.precioPorGalon - precioOficial) * r.galones;
         if (sobrecoste > 0) discrepanciaPrecioCombustible += sobrecoste;
       }
@@ -323,7 +345,8 @@ export class ViajesService {
       if (totalGalonesConsumidos > galonesEsperados) {
         const galonesPerdidos = totalGalonesConsumidos - galonesEsperados;
         // Precio promedio real pagado para convertir los galones perdidos a USD
-        const precioPromedioPagado = totalCombustibleReal / totalGalonesConsumidos;
+        const precioPromedioPagado =
+          totalCombustibleReal / totalGalonesConsumidos;
         discrepanciaGalones = galonesPerdidos * precioPromedioPagado;
       }
     }

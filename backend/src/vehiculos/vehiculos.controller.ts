@@ -101,7 +101,9 @@ export class VehiculosController {
       new ParseFilePipe({
         validators: [
           new MaxFileSizeValidator({ maxSize: MAX_FILE_SIZE }),
-          new FileTypeValidator({ fileType: /image\/(jpeg|jpg|png|webp|heic)/ }),
+          new FileTypeValidator({
+            fileType: /image\/(jpeg|jpg|png|webp|heic)/,
+          }),
         ],
         fileIsRequired: true,
       }),

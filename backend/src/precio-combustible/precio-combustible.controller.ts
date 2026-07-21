@@ -1,11 +1,4 @@
-import {
-  Controller,
-  Get,
-  Post,
-  Body,
-  Param,
-  UseGuards,
-} from '@nestjs/common';
+import { Controller, Get, Post, Body, Param, UseGuards } from '@nestjs/common';
 import { PrecioCombustibleService } from './precio-combustible.service';
 import { UpsertPrecioCombustibleDto } from './dto/upsert-precio-combustible.dto';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';

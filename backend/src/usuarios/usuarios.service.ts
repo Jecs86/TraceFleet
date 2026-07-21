@@ -58,7 +58,10 @@ export class UsuariosService {
     currentUser: AuthUser,
   ) {
     await this.findOne(id, currentUser);
-    return this.prisma.usuario.update({ where: { id }, data: updateUsuarioDto });
+    return this.prisma.usuario.update({
+      where: { id },
+      data: updateUsuarioDto,
+    });
   }
 
   /**
@@ -85,16 +88,13 @@ export class UsuariosService {
       );
     }
 
-    const res = await fetch(
-      `${supabaseUrl}/auth/v1/admin/users/${authId}`,
-      {
-        method: 'DELETE',
-        headers: {
-          apikey: serviceRoleKey,
-          Authorization: `Bearer ${serviceRoleKey}`,
-        },
+    const res = await fetch(`${supabaseUrl}/auth/v1/admin/users/${authId}`, {
+      method: 'DELETE',
+      headers: {
+        apikey: serviceRoleKey,
+        Authorization: `Bearer ${serviceRoleKey}`,
       },
-    );
+    });
 
     // 200 o 204 = éxito; 404 = ya no existía en Supabase (lo consideramos OK)
     if (!res.ok && res.status !== 404) {
