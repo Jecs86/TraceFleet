@@ -5,9 +5,26 @@ import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
 
-  // 1. Configurar CORS (Crucial para que React en localhost:5173 se comunique con NestJS)
+  // 1. Configurar CORS
+  const allowedOrigins = [
+    'http://localhost:5173',
+    'http://127.0.0.1:5173',
+    'https://trace-fleet.vercel.app',
+  ];
+
   app.enableCors({
-    origin: ['http://localhost:5173', 'http://127.0.0.1:5173'], // <- Agregado 127.0.0.1
+    origin: (origin, callback) => {
+      // Permitir requests sin origin (ej: curl, Swagger, Postman)
+      if (!origin) return callback(null, true);
+      // Permitir el dominio de producción y los previews automáticos de Vercel
+      if (
+        allowedOrigins.includes(origin) ||
+        /^https:\/\/trace-fleet-.*\.vercel\.app$/.test(origin)
+      ) {
+        return callback(null, true);
+      }
+      return callback(new Error(`CORS bloqueado para origen: ${origin}`), false);
+    },
     methods: 'GET,HEAD,PUT,PATCH,POST,DELETE',
     credentials: true,
   });
