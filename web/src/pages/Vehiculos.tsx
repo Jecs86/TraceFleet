@@ -4,6 +4,7 @@ import {
   Wrench, FileText, Folder, Settings, 
   Bell, UserCircle, Search, Plus, Image as ImageIcon
 } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 import { Link } from 'react-router-dom';
 import logoVertical from '../assets/images/logo-vertical.png';
 
@@ -13,15 +14,30 @@ import { vehiculosService, type Vehiculo } from '../services/vehiculos.service';
 export default function Vehiculos() {
   const [vehiculos, setVehiculos] = useState<Vehiculo[]>([]);
   const [loading, setLoading] = useState(true);
+  const navigate = useNavigate();
 
   // Efecto para cargar los vehículos al montar la pantalla
   useEffect(() => {
     const fetchVehiculos = async () => {
       try {
+        // Intentamos traer los vehículos reales del servicio
         const data = await vehiculosService.getVehiculos();
-        setVehiculos(data);
+        
+        // Si el backend responde vacío, unimos o leemos directo de la memoria local del navegador
+        const locales = JSON.parse(localStorage.getItem('tracefleet_vehiculos_locales') || '[]');
+        
+        // Combinamos ambos mundos para asegurar que los creados localmente aparezcan siempre
+        const combinados = [...locales, ...(Array.isArray(data) ? data : [])];
+        
+        // Eliminamos duplicados por si acaso usando un Map basado en la placa
+        const unicos = Array.from(new Map(combinados.map(v => [v.placa, v])).values());
+        
+        setVehiculos(unicos);
       } catch (error) {
-        console.error("Error al cargar la lista de vehículos:", error);
+        console.error("Error al cargar la lista de vehículos, cargando respaldo local:", error);
+        // Si hay un error de red o de servidor, cargamos lo que tengamos localmente
+        const locales = JSON.parse(localStorage.getItem('tracefleet_vehiculos_locales') || '[]');
+        setVehiculos(locales);
       } finally {
         setLoading(false);
       }
@@ -114,7 +130,9 @@ export default function Vehiculos() {
               />
             </div>
 
-            <button className="flex items-center justify-center gap-2 bg-[#6870C4] hover:bg-[#565CA8] text-white px-5 py-2.5 rounded-lg shadow-sm transition-colors font-medium">
+            <button 
+              onClick={() => navigate('/vehiculos/nuevo')}
+              className="flex items-center justify-center gap-2 bg-[#6870C4] hover:bg-[#565CA8] text-white px-5 py-2.5 rounded-lg shadow-sm transition-colors font-medium">
               <Plus className="w-5 h-5" />
               Nuevo vehículo
             </button>

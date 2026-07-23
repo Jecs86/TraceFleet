@@ -22,8 +22,8 @@ export default function CombustibleDetalle() {
     const fetchDetalles = async () => {
       try {
         if (id) {
-          const data = await combustibleDetalleService.getSolicitudById(id);
-          setSolicitud(data);
+          // const data = await combustibleDetalleService.getSolicitudById(id);
+          // setSolicitud(data);
         }
       } catch (error) {
         console.error("Error al cargar detalles de la solicitud de combustible:", error);

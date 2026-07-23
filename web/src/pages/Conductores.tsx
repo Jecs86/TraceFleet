@@ -6,11 +6,13 @@ import {
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import logoVertical from '../assets/images/logo-vertical.png';
+import { useNavigate } from 'react-router-dom';
 
 // Importamos el servicio y sus interfaces
 import { conductoresService, type ConductoresDashboardData } from '../services/conductores.service';
 
 export default function Conductores() {
+  const navigate = useNavigate();
   const [data, setData] = useState<ConductoresDashboardData | null>(null);
   const [loading, setLoading] = useState(true);
 
@@ -21,6 +23,11 @@ export default function Conductores() {
         setData(result);
       } catch (error) {
         console.error("Error al cargar el dashboard de conductores:", error);
+        // Respaldo por si falla la red para que la pantalla no se rompa
+        setData({
+          metricas: { totalChoferes: 0, enRuta: 0, descansando: 0, alertasActivas: 0 },
+          directorio: []
+        });
       } finally {
         setLoading(false);
       }
@@ -31,16 +38,17 @@ export default function Conductores() {
 
   // Función helper para determinar si un estado implica una alerta
   const requiresAlert = (estado: string) => {
-    return estado.toLowerCase().includes('precaución') || estado.toLowerCase().includes('alerta');
+    return estado ? estado.toLowerCase().includes('precaución') || estado.toLowerCase().includes('alerta') : false;
   };
 
   // Función helper para el color del indicador de estado
   const getEstadoColor = (estado: string) => {
+    if (!estado) return 'bg-gray-400';
     const estadoLower = estado.toLowerCase();
     if (requiresAlert(estadoLower)) return 'bg-red-500';
     if (estadoLower.includes('ruta')) return 'bg-green-500';
     if (estadoLower.includes('mantenimiento')) return 'bg-yellow-400';
-    return 'bg-gray-400'; // Para Descanso u otros
+    return 'bg-gray-400';
   };
 
   return (
@@ -153,7 +161,9 @@ export default function Conductores() {
               <div className="bg-white rounded-xl shadow-md border border-gray-100 p-6 flex flex-col flex-1">
                 <div className="flex justify-between items-center mb-6">
                   <h3 className="text-2xl font-bold text-[#1A2847]">Directorio de Choferes</h3>
-                  <button className="bg-[#3779CB] text-white px-4 py-2 rounded-lg font-medium hover:bg-blue-700 transition-colors">
+                  <button 
+                    onClick={() => navigate('/conductores/nuevo')}
+                    className="bg-[#3779CB] text-white px-4 py-2 rounded-lg font-medium hover:bg-blue-700 transition-colors">
                     + Nuevo Conductor
                   </button>
                 </div>
@@ -176,7 +186,7 @@ export default function Conductores() {
                           <div key={conductor.id} className={`grid grid-cols-4 gap-4 items-center p-4 rounded-lg border ${isAlert ? 'bg-red-50 border-red-200' : 'bg-gray-50 border-gray-100'}`}>
                             <div className="font-semibold text-gray-700 flex items-center gap-2">
                               <div className="w-8 h-8 rounded-full bg-slate-200 flex items-center justify-center text-slate-600 text-xs font-bold">
-                                {conductor.nombre.substring(0,2).toUpperCase()}
+                                {conductor.nombre ? conductor.nombre.substring(0,2).toUpperCase() : 'CH'}
                               </div>
                               {conductor.nombre}
                             </div>

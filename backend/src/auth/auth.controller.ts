@@ -15,6 +15,12 @@ export class AuthController {
     return user;
   }
 
+  @Post('login')
+  async login(@Body() body: { correo: string; contrasena: string }) {
+    // Agregamos el await aquí
+    return await this.authService.login(body.correo, body.contrasena);
+  }
+
   /**
    * Sincroniza un usuario de Supabase Auth con la BD local.
    * Soporta rol ADMIN (sin empresa), GERENTE y CHOFER.

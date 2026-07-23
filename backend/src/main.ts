@@ -7,7 +7,7 @@ async function bootstrap() {
 
   // 1. Configurar CORS (Crucial para que React en localhost:5173 se comunique con NestJS)
   app.enableCors({
-    origin: 'http://localhost:5173',
+    origin: ['http://localhost:5173', 'http://127.0.0.1:5173'], // <- Agregado 127.0.0.1
     methods: 'GET,HEAD,PUT,PATCH,POST,DELETE',
     credentials: true,
   });

@@ -1,8 +1,11 @@
 import api from './api';
+import { createClient } from '@supabase/supabase-js';
 
-// ==========================================
-// INTERFACES BASADAS EN PRISMA
-// ==========================================
+// Inicializamos el cliente de Supabase
+const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+const supabaseKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
+const supabase = createClient(supabaseUrl, supabaseKey);
+
 export type RolUsuario = 'ADMIN' | 'GERENTE' | 'CHOFER';
 
 export interface Usuario {
@@ -15,47 +18,47 @@ export interface Usuario {
   estadoActivo: boolean;
 }
 
-// ==========================================
-// INTERFACES DE PAYLOADS Y RESPUESTAS
-// ==========================================
 export interface LoginPayload {
-  correo: string; // Aunque el UI diga "Nombre", enviamos el correo para Supabase
+  correo: string;
   contrasena: string;
 }
 
-export interface AuthResponse {
-  usuario: Usuario;
-  accessToken: string; // El JWT devuelto por Supabase/NestJS
-  refreshToken?: string;
-}
-
 export const usuarioService = {
-  /**
-   * Inicia sesión enviando las credenciales al backend.
-   * El backend verificará con Supabase y devolverá el usuario y el token.
-   */
-  login: async (credenciales: LoginPayload): Promise<AuthResponse> => {
+  login: async (credenciales: LoginPayload) => {
     try {
-      const response = await api.post<AuthResponse>('/auth/login', credenciales);
-      
-      // Guardamos el token en localStorage o sessionStorage automáticamente
-      if (response.data.accessToken) {
-        localStorage.setItem('tracefleet_token', response.data.accessToken);
+      // 1. Hablamos directamente con Supabase para el Login
+      const { data, error } = await supabase.auth.signInWithPassword({
+        email: credenciales.correo,
+        password: credenciales.contrasena,
+      });
+
+      if (error) {
+        throw new Error(error.message);
+      }
+
+      // 2. Guardamos el token real de Supabase
+      if (data.session) {
+        localStorage.setItem('tracefleet_token', data.session.access_token);
       }
       
-      return response.data;
+      // 3. (Opcional) Traemos el perfil desde nuestro backend usando el token
+      const perfil = await usuarioService.getPerfil();
+      
+      return {
+        usuario: perfil,
+        accessToken: data.session.access_token
+      };
+
     } catch (error) {
       console.error("Error en la autenticación:", error);
       throw error;
     }
   },
 
-  /**
-   * Obtiene el perfil del usuario actualmente autenticado (usando el token almacenado).
-   */
   getPerfil: async (): Promise<Usuario> => {
     try {
-      const response = await api.get<Usuario>('/usuarios/perfil');
+      // Le pegamos al endpoint real que sí existe en NestJS
+      const response = await api.get<Usuario>('/auth/me');
       return response.data;
     } catch (error) {
       console.error("Error al obtener el perfil del usuario:", error);
@@ -63,19 +66,13 @@ export const usuarioService = {
     }
   },
 
-  /**
-   * Cierra la sesión local y opcionalmente notifica al backend.
-   */
   logout: async (): Promise<void> => {
     try {
-      // Opcional: Notificar al backend para invalidar el refresh token
-      await api.post('/auth/logout');
+      await supabase.auth.signOut();
     } catch (error) {
-      console.error("Error al notificar logout al servidor:", error);
+      console.error("Error al cerrar sesión en Supabase:", error);
     } finally {
-      // Siempre limpiamos el cliente, incluso si falla la llamada al servidor
       localStorage.removeItem('tracefleet_token');
-      // Aquí también podrías limpiar estado global si usas Zustand o Redux
     }
   }
 };

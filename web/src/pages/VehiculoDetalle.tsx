@@ -19,8 +19,8 @@ export default function VehiculoDetalle() {
     const fetchDetalles = async () => {
       try {
         if (id) {
-          const data = await vehiculoDetalleService.getVehiculoCompleto(id);
-          setVehiculo(data);
+          // const data = await vehiculoDetalleService.getVehiculoCompleto(id);
+          // setVehiculo(data);
         }
       } catch (error) {
         console.error("Error al cargar detalles del vehículo:", error);

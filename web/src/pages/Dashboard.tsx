@@ -2,12 +2,13 @@ import React, { useState, useEffect } from 'react';
 import { 
   LayoutDashboard, Truck, Map, Droplet, 
   Wrench, FileText, Folder, Settings, 
-  Bell, UserCircle, DollarSign, AlertTriangle, TrendingUp 
+  Bell, UserCircle, DollarSign, AlertTriangle, TrendingUp, Users
 } from 'lucide-react';
 import { 
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, ResponsiveContainer,
   LineChart, Line 
 } from 'recharts';
+import { Link } from 'react-router-dom';
 
 import logoVertical from '../assets/images/logo-vertical.png';
 // Asumimos que el servicio está en la carpeta superior /services
@@ -20,8 +21,8 @@ export default function Dashboard() {
   useEffect(() => {
     const fetchDashboardData = async () => {
       try {
-        const result = await dashboardService.getDashboardResume();
-        setData(result);
+        // const result = await dashboardService.getDashboardResume();
+        // setData(result);
       } catch (error) {
         console.error("Error cargando dashboard:", error);
       } finally {
@@ -55,26 +56,52 @@ export default function Dashboard() {
         <nav className="flex-1 overflow-y-auto py-4">
           <ul className="flex flex-col gap-1">
             <li>
-              <button className="w-full flex items-center gap-3 px-6 py-3 bg-blue-50 border-r-4 border-[#3779CB] text-[#3779CB] font-semibold transition-colors">
+              <Link to="/dashboard" className="w-full flex items-center gap-3 px-6 py-3 bg-blue-50 border-r-4 border-[#3779CB] text-[#3779CB] font-semibold transition-colors">
                 <LayoutDashboard className="w-5 h-5" />
                 Dashboard
-              </button>
+              </Link>
             </li>
-            {[
-              { name: 'Vehículos', icon: Truck },
-              { name: 'Rutas', icon: Map },
-              { name: 'Combustible', icon: Droplet },
-              { name: 'Mantenimiento', icon: Wrench },
-              { name: 'Reportes', icon: FileText },
-              { name: 'Documentos', icon: Folder },
-            ].map((item) => (
-              <li key={item.name}>
-                <button className="w-full flex items-center gap-3 px-6 py-3 text-gray-600 hover:bg-slate-50 hover:text-[#3779CB] transition-colors">
-                  <item.icon className="w-5 h-5" />
-                  {item.name}
-                </button>
-              </li>
-            ))}
+            <li>
+              <Link to="/vehiculos" className="w-full flex items-center gap-3 px-6 py-3 text-gray-600 hover:bg-slate-50 hover:text-[#3779CB] transition-colors">
+                <Truck className="w-5 h-5" />
+                Vehículos
+              </Link>
+            </li>
+            <li>
+            <Link to="/conductores" className="w-full flex items-center gap-3 px-6 py-3 text-gray-600 hover:bg-slate-50 hover:text-[#3779CB] transition-colors">
+              <Users className="w-5 h-5" /> Conductores
+            </Link>
+          </li>
+            <li>
+              <Link to="/rutas/asignar" className="w-full flex items-center gap-3 px-6 py-3 text-gray-600 hover:bg-slate-50 hover:text-[#3779CB] transition-colors">
+                <Map className="w-5 h-5" />
+                Rutas
+              </Link>
+            </li>
+            <li>
+              <Link to="/combustible" className="w-full flex items-center gap-3 px-6 py-3 text-gray-600 hover:bg-slate-50 hover:text-[#3779CB] transition-colors">
+                <Droplet className="w-5 h-5" />
+                Combustible
+              </Link>
+            </li>
+            <li>
+              <Link to="/mantenimiento" className="w-full flex items-center gap-3 px-6 py-3 text-gray-600 hover:bg-slate-50 hover:text-[#3779CB] transition-colors">
+                <Wrench className="w-5 h-5" />
+                Mantenimiento
+              </Link>
+            </li>
+            <li>
+              <Link to="/reportes" className="w-full flex items-center gap-3 px-6 py-3 text-gray-600 hover:bg-slate-50 hover:text-[#3779CB] transition-colors">
+                <FileText className="w-5 h-5" />
+                Reportes
+              </Link>
+            </li>
+            <li>
+              <Link to="/documentos" className="w-full flex items-center gap-3 px-6 py-3 text-gray-600 hover:bg-slate-50 hover:text-[#3779CB] transition-colors">
+                <Folder className="w-5 h-5" />
+                Documentos
+              </Link>
+            </li>
           </ul>
         </nav>
 

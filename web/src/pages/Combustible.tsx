@@ -21,8 +21,8 @@ export default function Combustible() {
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const result = await combustibleService.getDashboardData();
-        setData(result);
+        // const result = await combustibleService.getDashboardData();
+        // setData(result);
       } catch (error) {
         console.error("Error cargando dashboard de combustible:", error);
       } finally {

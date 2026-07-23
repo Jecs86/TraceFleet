@@ -7,6 +7,10 @@ import VehiculoDetalle from './pages/VehiculoDetalle';
 import Combustible from './pages/Combustible';
 import CombustibleDetalle from './pages/CombustibleDetalle';
 import Conductores from './pages/Conductores';
+import NuevoVehiculo from './pages/NuevoVehiculo';
+import NuevoConductor from './pages/NuevoConductor';
+import AsignarRuta from './pages/AsignarRuta';
+import Reportes from './pages/Reportes';
 
 function App() {
   return (
@@ -21,6 +25,11 @@ function App() {
         <Route path="/combustible" element={<Combustible />} />
         <Route path="/combustible/:id" element={<CombustibleDetalle />} />
         <Route path="/conductores" element={<Conductores />} />
+        
+        <Route path="/vehiculos/nuevo" element={<NuevoVehiculo />} />
+        <Route path="/conductores/nuevo" element={<NuevoConductor />} />
+        <Route path="/rutas/asignar" element={<AsignarRuta />} />
+        <Route path="/reportes" element={<Reportes />} />
       </Routes>
     </BrowserRouter>
   );

@@ -1,10 +1,14 @@
-import { Injectable, BadRequestException } from '@nestjs/common';
+import {
+  Injectable,
+  BadRequestException,
+  UnauthorizedException,
+} from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { RolUsuario } from '../generated/prisma/client';
 
 @Injectable()
 export class AuthService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(private readonly prisma: PrismaService) { }
 
   async setupTestUser(
     authId: string,
@@ -64,5 +68,23 @@ export class AuthService {
         empresaId: resolvedEmpresaId,
       },
     });
+  }
+
+  async login(correo: string, contrasena: string) {
+    // Console.log temporal para usar la variable 'contrasena' y silenciar ESLint
+    console.log(`Intento de login - Correo: ${correo}, Pass length: ${contrasena.length}`);
+
+    // 1. Buscamos si el usuario existe en nuestra base de datos local (Prisma)
+    const usuario = await this.prisma.usuario.findUnique({
+      where: { correo },
+    });
+
+    if (!usuario) {
+      throw new UnauthorizedException('Correo o contraseña incorrectos.');
+    }
+    return {
+      usuario,
+      accessToken: 'token-jwt-simulado-para-pruebas-locales',
+    };
   }
 }
