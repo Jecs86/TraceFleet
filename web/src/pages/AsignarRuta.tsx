@@ -2,6 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ArrowLeft, MapPin, Save, Map as MapIcon } from 'lucide-react';
 import { rutasService } from '../services/rutas.service';
+import { vehiculosService, type Vehiculo } from '../services/vehiculos.service';
+import { conductoresService, type Conductor } from '../services/conductores.service';
 
 export default function AsignarRuta() {
   const navigate = useNavigate();
@@ -15,24 +17,34 @@ export default function AsignarRuta() {
   });
 
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [conductoresList, setConductoresList] = useState<any[]>([]);
-  const [vehiculosList, setVehiculosList] = useState<any[]>(localStorage.getItem('tracefleet_vehiculos_locales') ? JSON.parse(localStorage.getItem('tracefleet_vehiculos_locales')!) : []);
+  const [conductoresList, setConductoresList] = useState<Conductor[]>([]);
+  const [vehiculosList, setVehiculosList] = useState<Vehiculo[]>([]);
+  const [loadingData, setLoadingData] = useState(true);
 
-  // Cargamos los vehículos y conductores reales guardados localmente
   useEffect(() => {
-    const vehiculosLocales = JSON.parse(localStorage.getItem('tracefleet_vehiculos_locales') || '[]');
-    const vehiculosDefinitivos = vehiculosLocales.length > 0 ? vehiculosLocales : [
-      { id: '1', placa: 'ABC-1234', marca: 'Hino' },
-      { id: '2', placa: 'XYZ-9876', marca: 'Volvo' }
-    ];
-    setVehiculosList(vehiculosDefinitivos);
+    const cargarDatos = async () => {
+      try {
+        // Cargamos vehículos y conductores desde el backend en paralelo
+        const [vehiculosData, conductoresData] = await Promise.allSettled([
+          vehiculosService.getVehiculos(),
+          conductoresService.getDashboardData(),
+        ]);
 
-    const conductoresLocales = JSON.parse(localStorage.getItem('tracefleet_conductores_locales') || '[]');
-    const conductoresDefinitivos = conductoresLocales.length > 0 ? conductoresLocales : [
-      { id: '1', nombre: 'Juan Pérez' },
-      { id: '2', nombre: 'Carlos Mendoza' }
-    ];
-    setConductoresList(conductoresDefinitivos);
+        if (vehiculosData.status === 'fulfilled') {
+          // Solo vehículos operativos
+          setVehiculosList(vehiculosData.value.filter(v => v.estadoOperativo));
+        }
+        if (conductoresData.status === 'fulfilled') {
+          setConductoresList(conductoresData.value.directorio);
+        }
+      } catch (error) {
+        console.error('Error cargando datos del formulario:', error);
+      } finally {
+        setLoadingData(false);
+      }
+    };
+
+    cargarDatos();
   }, []);
 
   // Función handleChange que faltaba
@@ -91,8 +103,11 @@ export default function AsignarRuta() {
                       onChange={handleChange}
                       className="border border-gray-300 rounded-lg px-4 py-2 shadow-sm focus:outline-none focus:ring-2 focus:ring-[#3779CB] focus:border-transparent bg-white"
                       required
+                      disabled={loadingData}
                     >
-                      <option value="" disabled>-- Elige un conductor --</option>
+                      <option value="" disabled>
+                        {loadingData ? 'Cargando conductores...' : '-- Elige un conductor --'}
+                      </option>
                       {conductoresList.map(c => (
                         <option key={c.id} value={c.id}>{c.nombre}</option>
                       ))}
@@ -108,10 +123,13 @@ export default function AsignarRuta() {
                       onChange={handleChange}
                       className="border border-gray-300 rounded-lg px-4 py-2 shadow-sm focus:outline-none focus:ring-2 focus:ring-[#3779CB] focus:border-transparent bg-white"
                       required
+                      disabled={loadingData}
                     >
-                      <option value="" disabled>-- Elige un vehículo --</option>
+                      <option value="" disabled>
+                        {loadingData ? 'Cargando vehículos...' : '-- Elige un vehículo --'}
+                      </option>
                       {vehiculosList.map(v => (
-                        <option key={v.id} value={v.id}>{v.placa} - {v.marca}</option>
+                        <option key={v.id} value={v.id}>{v.placa}{v.marca ? ` - ${v.marca}` : ''}</option>
                       ))}
                     </select>
                   </div>
