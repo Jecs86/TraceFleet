@@ -21,8 +21,8 @@ export default function Dashboard() {
   useEffect(() => {
     const fetchDashboardData = async () => {
       try {
-        // const result = await dashboardService.getDashboardResume();
-        // setData(result);
+        const result = await dashboardService.getDashboardResume();
+        setData(result);
       } catch (error) {
         console.error("Error cargando dashboard:", error);
       } finally {

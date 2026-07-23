@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ArrowLeft, MapPin, Save, Map } from 'lucide-react';
+import { ArrowLeft, MapPin, Save, Map as MapIcon } from 'lucide-react';
 import { rutasService } from '../services/rutas.service';
 
 export default function AsignarRuta() {
@@ -176,7 +176,7 @@ export default function AsignarRuta() {
             <div className="lg:col-span-1">
               <label className="font-semibold text-gray-700 block mb-2">Vista Previa de Ruta</label>
               <div className="border-2 border-dashed border-gray-300 rounded-xl h-full min-h-[300px] flex flex-col items-center justify-center bg-gray-50 text-gray-400">
-                <Map className="w-16 h-16 mb-4 text-[#3779CB] opacity-40" />
+                <MapIcon className="w-16 h-16 mb-4 text-[#3779CB] opacity-40" />
                 <span className="font-medium text-gray-600">Integración de Mapas</span>
                 <span className="text-sm mt-2 text-gray-400 text-center px-6">
                   Aquí se mostrará la ruta calculada entre el origen y el destino una vez guardada.

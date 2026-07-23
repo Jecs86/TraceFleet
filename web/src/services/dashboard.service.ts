@@ -50,14 +50,24 @@ export const dashboardService = {
    */
   getDashboardResume: async (): Promise<DashboardData> => {
     try {
-      // Ejecutamos las peticiones en paralelo para mayor velocidad
-      const [liquidacionesRes, viajesRes] = await Promise.all([
-        api.get('/viajes/liquidaciones'), // Trae el histórico financiero
-        api.get('/viajes')                // Trae todos los viajes
+      // Ejecutamos las peticiones en paralelo pero de forma independiente
+      // para que un fallo en liquidaciones no bloquee los viajes activos
+      const [liquidacionesResult, viajesResult] = await Promise.allSettled([
+        api.get('/viajes/liquidaciones'),
+        api.get('/viajes'),
       ]);
 
-      const liquidaciones: Liquidacion[] = liquidacionesRes.data;
-      const todosLosViajes = viajesRes.data;
+      const liquidaciones: Liquidacion[] = 
+        liquidacionesResult.status === 'fulfilled' ? liquidacionesResult.value.data : [];
+      const todosLosViajes = 
+        viajesResult.status === 'fulfilled' ? viajesResult.value.data : [];
+
+      if (liquidacionesResult.status === 'rejected') {
+        console.warn('No se pudieron cargar liquidaciones:', liquidacionesResult.reason);
+      }
+      if (viajesResult.status === 'rejected') {
+        console.warn('No se pudieron cargar viajes:', viajesResult.reason);
+      }
 
       // --------------------------------------------------------
       // 1. Cálculos para las 3 Tarjetas Superiores

@@ -20,19 +20,9 @@ export default function Vehiculos() {
   useEffect(() => {
     const fetchVehiculos = async () => {
       try {
-        // Intentamos traer los vehículos reales del servicio
+        // El servicio ya combina backend + localStorage internamente
         const data = await vehiculosService.getVehiculos();
-        
-        // Si el backend responde vacío, unimos o leemos directo de la memoria local del navegador
-        const locales = JSON.parse(localStorage.getItem('tracefleet_vehiculos_locales') || '[]');
-        
-        // Combinamos ambos mundos para asegurar que los creados localmente aparezcan siempre
-        const combinados = [...locales, ...(Array.isArray(data) ? data : [])];
-        
-        // Eliminamos duplicados por si acaso usando un Map basado en la placa
-        const unicos = Array.from(new Map(combinados.map(v => [v.placa, v])).values());
-        
-        setVehiculos(unicos);
+        setVehiculos(Array.isArray(data) ? data : []);
       } catch (error) {
         console.error("Error al cargar la lista de vehículos, cargando respaldo local:", error);
         // Si hay un error de red o de servidor, cargamos lo que tengamos localmente

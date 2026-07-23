@@ -45,10 +45,11 @@ async function bootstrap() {
   // 3. Levantar la interfaz de Swagger en la ruta /api
   SwaggerModule.setup('api', app, document);
 
-  // El backend escuchará en el puerto 3000
-  await app.listen(3000);
+  // El backend escuchará en el puerto que Render asigne, o 3000 en local
+  const port = process.env.PORT || 3000;
+  await app.listen(port);
 
-  console.log(`🚀 Servidor backend corriendo en: http://localhost:3000`);
+  console.log(`🚀 Servidor backend corriendo en el puerto: ${port}`);
   console.log(
     `📚 Documentación Swagger disponible en: http://localhost:3000/api`,
   );
