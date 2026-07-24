@@ -3,6 +3,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import logoHorizontal from '../assets/images/logo-horizontal.png';
 import logoVertical from '../assets/images/logo-vertical.png';
 import { usuarioService } from '../services/usuario.service'; // Asegúrate de que la ruta sea la correcta
+import Button from '../components/Button';
 
 export default function Login() {
   const navigate = useNavigate();
@@ -33,10 +34,10 @@ export default function Login() {
   };
 
   return (
-    <div className="min-h-screen flex flex-col bg-[#E2E8F0]">
+    <div className="min-h-screen flex flex-col bg-bg">
       
       {/* HEADER */}
-      <header className="flex justify-between items-center px-8 py-5 bg-white shadow-sm z-10 relative">
+      <header className="flex justify-between items-center px-8 py-5 bg-surface border-b border-border shadow-sm z-10 relative">
         <Link to="/">
           <img 
             src={logoHorizontal} 
@@ -49,7 +50,7 @@ export default function Login() {
       {/* CONTENIDO CENTRAL */}
       <main className="flex-1 flex flex-col items-center justify-center p-6">
         
-        <div className="bg-white px-8 py-10 md:px-12 rounded-3xl shadow-xl border border-gray-100 w-full max-w-lg">
+        <div className="bg-surface px-8 py-10 md:px-12 rounded-3xl shadow-xl border border-border w-full max-w-lg">
           
           <div className="flex flex-col items-center justify-center mb-4">
             <img 
@@ -57,12 +58,12 @@ export default function Login() {
               alt="Icono TF" 
               className="h-10 mb-2 object-contain" 
             />
-            <h2 className="text-xl md:text-2xl font-bold text-center text-[#1A2847]">
+            <h2 className="text-xl md:text-2xl font-bold text-center text-text-heading">
               Iniciar Sesión
             </h2>
           </div>
           
-          <hr className="border-gray-300 mb-8" />
+          <hr className="border-divider mb-8" />
 
           {/* Mostrar mensaje de error si existe */}
           {error && (
@@ -76,7 +77,7 @@ export default function Login() {
             
             {/* Fila: Correo */}
             <div className="flex items-center gap-4">
-              <label className="w-28 text-right font-bold text-black text-lg">
+              <label className="w-28 text-right font-bold text-text-heading text-lg">
                 Correo:
               </label>
               <input 
@@ -84,13 +85,13 @@ export default function Login() {
                 value={correo}
                 onChange={(e) => setCorreo(e.target.value)}
                 required
-                className="flex-1 bg-gray-200 shadow-inner rounded-md px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-[#3779CB] transition-all"
+                className="flex-1 bg-card text-text-heading border border-border shadow-inner rounded-md px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-primary transition-all"
               />
             </div>
 
             {/* Fila: Contraseña */}
             <div className="flex items-center gap-4">
-              <label className="w-28 text-right font-bold text-black text-lg">
+              <label className="w-28 text-right font-bold text-text-heading text-lg">
                 Contraseña:
               </label>
               <input 
@@ -98,25 +99,25 @@ export default function Login() {
                 value={contrasena}
                 onChange={(e) => setContrasena(e.target.value)}
                 required
-                className="flex-1 bg-gray-200 shadow-inner rounded-md px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-[#3779CB] transition-all"
+                className="flex-1 bg-card text-text-heading border border-border shadow-inner rounded-md px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-primary transition-all"
               />
             </div>
 
             <div className="flex justify-end mt-2 mb-4">
-              <a href="#" className="text-[#3779CB] underline text-sm font-semibold hover:text-[#2c62a6] transition-colors">
+              <a href="#" className="text-secondary underline text-sm font-semibold hover:text-primary transition-colors">
                 ¿No recuerdas tu contraseña?
               </a>
             </div>
 
             {/* Botón Ingresar */}
             <div className="flex justify-center">
-              <button 
+              <Button 
                 type="submit" 
                 disabled={cargando}
-                className="bg-[#3779CB] text-white text-lg font-bold py-2.5 px-12 rounded-lg shadow-md hover:shadow-lg hover:bg-[#2c62a6] transition-all duration-200 hover:-translate-y-1 disabled:opacity-50"
+                className="text-lg py-2.5 px-12"
               >
                 {cargando ? 'Ingresando...' : 'Ingresar'}
-              </button>
+              </Button>
             </div>
 
           </form>

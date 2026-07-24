@@ -4,6 +4,7 @@ import { ArrowLeft, MapPin, Save, Map as MapIcon } from 'lucide-react';
 import { rutasService } from '../services/rutas.service';
 import { vehiculosService, type Vehiculo } from '../services/vehiculos.service';
 import { conductoresService, type Conductor } from '../services/conductores.service';
+import Button from '../components/Button';
 
 export default function AsignarRuta() {
   const navigate = useNavigate();
@@ -73,20 +74,20 @@ export default function AsignarRuta() {
   };
 
   return (
-    <div className="flex h-screen bg-[#E2E8F0] font-sans">
+    <div className="flex h-screen bg-bg font-sans">
       <div className="flex-1 flex flex-col overflow-hidden p-8">
         <button 
           onClick={() => navigate(-1)} 
-          className="flex items-center gap-2 text-gray-600 hover:text-[#3779CB] mb-6 transition-colors w-fit font-medium"
+          className="flex items-center gap-2 text-text-muted hover:text-primary mb-6 transition-colors w-fit font-medium"
         >
           <ArrowLeft className="w-5 h-5" />
           Volver a Rutas
         </button>
 
-        <div className="bg-white flex-1 rounded-xl shadow-sm border border-gray-100 p-8">
-          <div className="flex items-center gap-3 mb-8 border-b border-gray-100 pb-4">
-            <MapPin className="text-[#3779CB] w-8 h-8" />
-            <h2 className="text-2xl font-bold text-[#1A2847]">Asignar Nueva Ruta</h2>
+        <div className="bg-surface flex-1 rounded-xl shadow-sm border border-border p-8">
+          <div className="flex items-center gap-3 mb-8 border-b border-divider pb-4">
+            <MapPin className="text-primary w-8 h-8" />
+            <h2 className="text-2xl font-bold text-text-heading">Asignar Nueva Ruta</h2>
           </div>
           
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-10">
@@ -95,13 +96,13 @@ export default function AsignarRuta() {
                 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   <div className="flex flex-col gap-2">
-                    <label htmlFor="conductorId" className="font-semibold text-gray-700">Seleccionar Conductor *</label>
+                    <label htmlFor="conductorId" className="font-semibold text-text-muted">Seleccionar Conductor *</label>
                     <select
                       id="conductorId"
                       name="conductorId"
                       value={formData.conductorId}
                       onChange={handleChange}
-                      className="border border-gray-300 rounded-lg px-4 py-2 shadow-sm focus:outline-none focus:ring-2 focus:ring-[#3779CB] focus:border-transparent bg-white"
+                      className="border border-border bg-card text-text-heading rounded-lg px-4 py-2 shadow-sm focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
                       required
                       disabled={loadingData}
                     >
@@ -115,13 +116,13 @@ export default function AsignarRuta() {
                   </div>
 
                   <div className="flex flex-col gap-2">
-                    <label htmlFor="vehiculoId" className="font-semibold text-gray-700">Seleccionar Vehículo *</label>
+                    <label htmlFor="vehiculoId" className="font-semibold text-text-muted">Seleccionar Vehículo *</label>
                     <select
                       id="vehiculoId"
                       name="vehiculoId"
                       value={formData.vehiculoId}
                       onChange={handleChange}
-                      className="border border-gray-300 rounded-lg px-4 py-2 shadow-sm focus:outline-none focus:ring-2 focus:ring-[#3779CB] focus:border-transparent bg-white"
+                      className="border border-border bg-card text-text-heading rounded-lg px-4 py-2 shadow-sm focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
                       required
                       disabled={loadingData}
                     >
@@ -137,7 +138,7 @@ export default function AsignarRuta() {
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   <div className="flex flex-col gap-2">
-                    <label htmlFor="origen" className="font-semibold text-gray-700">Punto de Origen *</label>
+                    <label htmlFor="origen" className="font-semibold text-text-muted">Punto de Origen *</label>
                     <input
                       type="text"
                       id="origen"
@@ -145,13 +146,13 @@ export default function AsignarRuta() {
                       value={formData.origen}
                       onChange={handleChange}
                       placeholder="Ej: Bodega Principal, Guayaquil"
-                      className="border border-gray-300 rounded-lg px-4 py-2 shadow-sm focus:outline-none focus:ring-2 focus:ring-[#3779CB] focus:border-transparent"
+                      className="border border-border bg-card text-text-heading rounded-lg px-4 py-2 shadow-sm focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
                       required
                     />
                   </div>
 
                   <div className="flex flex-col gap-2">
-                    <label htmlFor="destino" className="font-semibold text-gray-700">Punto de Destino *</label>
+                    <label htmlFor="destino" className="font-semibold text-text-muted">Punto de Destino *</label>
                     <input
                       type="text"
                       id="destino"
@@ -159,14 +160,14 @@ export default function AsignarRuta() {
                       value={formData.destino}
                       onChange={handleChange}
                       placeholder="Ej: Centro de Distribución, Quito"
-                      className="border border-gray-300 rounded-lg px-4 py-2 shadow-sm focus:outline-none focus:ring-2 focus:ring-[#3779CB] focus:border-transparent"
+                      className="border border-border bg-card text-text-heading rounded-lg px-4 py-2 shadow-sm focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
                       required
                     />
                   </div>
                 </div>
 
                 <div className="flex flex-col gap-2">
-                  <label htmlFor="notas" className="font-semibold text-gray-700">Notas Adicionales (Opcional)</label>
+                  <label htmlFor="notas" className="font-semibold text-text-muted">Notas Adicionales (Opcional)</label>
                   <textarea
                     id="notas"
                     name="notas"
@@ -174,29 +175,29 @@ export default function AsignarRuta() {
                     onChange={handleChange}
                     rows={3}
                     placeholder="Instrucciones especiales para el conductor, carga delicada, etc."
-                    className="border border-gray-300 rounded-lg px-4 py-2 shadow-sm focus:outline-none focus:ring-2 focus:ring-[#3779CB] focus:border-transparent resize-none"
+                    className="border border-border bg-card text-text-heading rounded-lg px-4 py-2 shadow-sm focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent resize-none"
                   ></textarea>
                 </div>
 
                 <div className="pt-6 flex justify-start">
-                  <button
+                  <Button
                     type="submit"
                     disabled={isSubmitting}
-                    className="flex items-center gap-2 bg-[#5B6B98] text-white px-8 py-3 rounded-lg font-medium hover:bg-[#4A577C] transition-colors shadow-sm disabled:opacity-50 disabled:cursor-not-allowed"
+                    className="px-8 py-3"
                   >
                     <Save className="w-5 h-5" />
                     {isSubmitting ? 'Asignando...' : 'Asignar e Iniciar Viaje'}
-                  </button>
+                  </Button>
                 </div>
               </form>
             </div>
 
             <div className="lg:col-span-1">
-              <label className="font-semibold text-gray-700 block mb-2">Vista Previa de Ruta</label>
-              <div className="border-2 border-dashed border-gray-300 rounded-xl h-full min-h-[300px] flex flex-col items-center justify-center bg-gray-50 text-gray-400">
-                <MapIcon className="w-16 h-16 mb-4 text-[#3779CB] opacity-40" />
-                <span className="font-medium text-gray-600">Integración de Mapas</span>
-                <span className="text-sm mt-2 text-gray-400 text-center px-6">
+              <label className="font-semibold text-text-muted block mb-2">Vista Previa de Ruta</label>
+              <div className="border-2 border-dashed border-border rounded-xl h-full min-h-[300px] flex flex-col items-center justify-center bg-card text-text-muted">
+                <MapIcon className="w-16 h-16 mb-4 text-primary opacity-40" />
+                <span className="font-medium text-text-heading">Integración de Mapas</span>
+                <span className="text-sm mt-2 text-text-muted text-center px-6">
                   Aquí se mostrará la ruta calculada entre el origen y el destino una vez guardada.
                 </span>
               </div>
